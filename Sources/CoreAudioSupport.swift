@@ -17,20 +17,28 @@ enum HAL {
     static func value<T>(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector, default fallback: T,
                          scope: AudioObjectPropertyScope = kAudioObjectPropertyScopeGlobal) -> T {
         var result = fallback, size = UInt32(MemoryLayout<T>.size), property = address(selector, scope)
-        let status = withUnsafeMutablePointer(to: &result) { AudioObjectGetPropertyData(object, &property, 0, nil, &size, $0) }
+        let status = AudioTrace.call("get object=\(object) selector=\(selector) scope=\(scope)") {
+            withUnsafeMutablePointer(to: &result) { AudioObjectGetPropertyData(object, &property, 0, nil, &size, $0) }
+        }
         return status == noErr ? result : fallback
     }
     static func string(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector) -> String? {
         var result: Unmanaged<CFString>?, size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size), property = address(selector)
-        guard AudioObjectGetPropertyData(object, &property, 0, nil, &size, &result) == noErr else { return nil }
+        let status = AudioTrace.call("getString object=\(object) selector=\(selector)") {
+            AudioObjectGetPropertyData(object, &property, 0, nil, &size, &result)
+        }
+        guard status == noErr else { return nil }
         return result?.takeRetainedValue() as String?
     }
     static func ids(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector,
                     scope: AudioObjectPropertyScope = kAudioObjectPropertyScopeGlobal) -> [AudioObjectID] {
         var property = address(selector, scope), size: UInt32 = 0
-        guard AudioObjectGetPropertyDataSize(object, &property, 0, nil, &size) == noErr, size > 0 else { return [] }
+        let sizing = AudioTrace.call("getArraySize object=\(object) selector=\(selector) scope=\(scope)") { AudioObjectGetPropertyDataSize(object, &property, 0, nil, &size) }
+        guard sizing == noErr, size > 0 else { return [] }
         var result = [AudioObjectID](repeating: 0, count: Int(size) / MemoryLayout<AudioObjectID>.size)
-        let status = result.withUnsafeMutableBytes { AudioObjectGetPropertyData(object, &property, 0, nil, &size, $0.baseAddress!) }
+        let status = AudioTrace.call("getArray object=\(object) selector=\(selector) scope=\(scope)") {
+            result.withUnsafeMutableBytes { AudioObjectGetPropertyData(object, &property, 0, nil, &size, $0.baseAddress!) }
+        }
         return status == noErr ? Array(result.prefix(Int(size) / MemoryLayout<AudioObjectID>.size)) : []
     }
     static func buffers(_ device: AudioObjectID, scope: AudioObjectPropertyScope) throws -> [UInt32] {
@@ -64,6 +72,7 @@ struct AudioSource: Codable {
     let bundleURL: URL?
     var processes: [AudioObjectID]
     var running: Bool
+
 }
 
 enum SourceDiscovery {
@@ -96,6 +105,12 @@ enum SourceDiscovery {
             let name = app?.localizedName ?? (bundle?.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String) ?? (bundle?.object(forInfoDictionaryKey: "CFBundleName") as? String) ?? url?.deletingPathExtension().lastPathComponent ?? (bundleID.isEmpty ? "Audio Process \(pid)" : bundleID)
             if var existing = groups[id] { existing.processes.append(object); existing.running = existing.running || running; groups[id] = existing }
             else { groups[id] = AudioSource(id: id, name: name, bundleURL: url, processes: [object], running: running) }
+        }
+        // Keep all regular applications available before their first sound.
+        for app in applications {
+            guard let id = app.bundleIdentifier, groups[id] == nil, !id.hasPrefix("io.github.HaomingLyu613.VolumeMixer") else { continue }
+            let source = AudioSource(id: id, name: app.localizedName ?? id, bundleURL: app.bundleURL, processes: [], running: false)
+            groups[id] = source
         }
         return groups.values.map { source in var value = source; value.processes.sort(); return value }.sorted {
             if $0.running != $1.running { return $0.running }

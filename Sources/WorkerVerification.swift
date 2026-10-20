@@ -25,6 +25,13 @@ enum WorkerVerification {
             clients.append(value); return value
         }
         do {
+            try require(VolumeSetting(volume: 200).gain == 2, "200% did not map to 2x amplitude")
+            try require(VolumeScale.position(for: 100) == 0.75 && VolumeScale.volume(for: 0) == 0 && VolumeScale.volume(for: 1) == 200, "Volume landmarks incorrect")
+            try require(abs(VolumeScale.volume(for: 0.5) - 81.649658) < 0.001, "Half slider should allow finer normal-level control")
+            for value in 0...200 {
+                try require(abs(VolumeScale.volume(for: VolumeScale.position(for: Double(value))) - Double(value)) < 0.00001, "Volume curve lost its true percentage")
+            }
+            checks.append("0–200% curve is invertible; unity at 75% travel; half travel is 81.65% amplitude")
             let normal = client("fixture")
             let enabled: Result<Void, Error> = try awaitValue { normal.enable(completion: $0) }
             try enabled.get()
@@ -32,6 +39,10 @@ enum WorkerVerification {
             try require(value.sources.first?.id == "fixture", "Snapshot did not survive JSON framing")
             let levels: [String: Float] = try awaitValue { normal.meters(completion: $0) }
             try require(levels["fixture"] == 0.25, "Meter reply incorrect")
+            let _: Bool = try awaitValue { callback in
+                normal.updateGains(settings: ["fixture": VolumeSetting(volume: 200)]) { callback(true) }
+            }
+            try require(normal.requestStatistics["gains"] == 1, "Fast gain IPC did not round trip")
             let child = normal.workerPID!
             let _: Bool = try awaitValue { callback in normal.disable { callback(true) } }
             Thread.sleep(forTimeInterval: 0.1)
@@ -85,6 +96,7 @@ enum WorkerVerification {
             var model: MixerModel!
             DispatchQueue.main.sync {
                 model = MixerModel(engine: dragging, automaticRefresh: false, settingsStore: store)
+                model.enabled = true
                 let source = AudioSource(id: "fixture", name: "Test App", bundleURL: nil, processes: [], running: false)
                 for index in 0..<1000 { model.setVolume(Double(index % 101), for: source) }
                 model.setVolume(37, for: source)

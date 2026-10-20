@@ -6,6 +6,10 @@
 CF_ASSUME_NONNULL_BEGIN
 typedef struct MixerDSP MixerDSP;
 MixerDSP * _Nullable MixerDSPCreate(float gain, uint32_t firstInputBuffer, uint32_t inputBufferCount, bool playback);
+// Gains are linear amplitude (0 = silence, 1 = unity, 2 = 200%). Changes ramp
+// for 30 ms at the stream's actual sample rate; linked peak limiting caps output.
+// The compatibility constructor above assumes 48 kHz.
+MixerDSP * _Nullable MixerDSPCreateWithSampleRate(float gain, uint32_t firstInputBuffer, uint32_t inputBufferCount, bool playback, double sampleRate);
 void MixerDSPDestroy(MixerDSP *state);
 void MixerDSPSetGain(MixerDSP *state, float gain);
 void MixerDSPSetPlaybackEnabled(MixerDSP *state, bool enabled);

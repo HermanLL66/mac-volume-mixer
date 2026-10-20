@@ -1,0 +1,100 @@
+{
+  "date": "2026-10-20",
+  "scope": "Shared-backend measurements from the local development bundle 1.1.0; not a real-audio run of either English 0.2.0 bundle identity.",
+  "englishBundleRealAudioVerified": false,
+  "environment": {
+    "macOS": "14.6.1",
+    "architecture": "arm64",
+    "output": "built-in stereo speakers",
+    "captureRateHz": 48000,
+    "renderRateHz": 48000
+  },
+  "audioSaved": false,
+  "microphoneAudioRecorded": false,
+  "acousticLoudnessVerified": false,
+  "farEndCallAudioOrAECVerified": false,
+  "bluetoothVerified": false,
+  "englishSourceFastChecks": {
+    "standaloneBuildAndStrictAdHocSignature": true,
+    "exampleBuildAndStrictAdHocSignature": true,
+    "dspAndTransportASanUBSan": true,
+    "probeWatchdogBlockedMainAndParentExit": true,
+    "inputSnapshotMetadataComparisons": true,
+    "mockWorkerProtocolAndLifecycle": true,
+    "sliderBurstFinalSetting": 37
+  },
+  "engine": {
+    "passed": true,
+    "durationSeconds": 20.236,
+    "observationCount": 78,
+    "checks": [
+      "Real AudioEngine.refresh/completion ran through >3-second watchdog intervals",
+      "A stopped real I/O for >4 seconds without a connection error",
+      "A resumed automatically; B retained 75% emitted gain",
+      "Independent emitted gains A=25%, B=75%",
+      "New A process retained stable app ID and 25% setting",
+      "Active nonempty A topology swap preserved the same tap/aggregate and sustained A=25%, B=75%",
+      "Muting A emits silence while B retains 75%",
+      "Unmuting and changing both gains emits A=50%, B=30%",
+      "No new audio taps remained after shutdown",
+      "Default output UID, sample rate, master/channel scalar and mute unchanged",
+      "Every observed transport had valid capture/render rates and AUHAL physical input I/O disabled",
+      "Read-only default input UID, sample rate and supported input master/channel volume/mute controls unchanged"
+    ],
+    "inputHardwarePreservationVerified": true,
+    "remainingNewTapObjects": 0
+  },
+  "chrome": {
+    "passed": true,
+    "checks": [
+      "Real Chrome produces a stable native signal",
+      "Real Chrome connects through production AudioEngine worker",
+      "Independent replay capture matches Chrome native baseline at 50%, 25%, 150%, 200% and mute for a low-level signal",
+      "Real Chrome sustained 50% independent replay for at least 60 seconds with physical input I/O disabled",
+      "Disable restores Chrome native baseline",
+      "Worker cleanup acknowledged and process exited; monitor destroy calls succeeded; default output unchanged"
+    ],
+    "gainSamples": [
+      {
+        "requestedPercent": 50,
+        "relativeToNative": 0.49996623396873474
+      },
+      {
+        "requestedPercent": 25,
+        "relativeToNative": 0.2499796599149704
+      },
+      {
+        "requestedPercent": 150,
+        "relativeToNative": 1.4998955726623535
+      },
+      {
+        "requestedPercent": 200,
+        "relativeToNative": 1.999870777130127
+      },
+      {
+        "requestedPercent": 0,
+        "relativeToNative": 0
+      }
+    ],
+    "restoredNativeRatio": 1.0000001091394106,
+    "workerExited": true,
+    "workerStopError": "",
+    "monitorCleanupAllStatusesZero": true,
+    "sustainedSeconds": 60.892229041666724,
+    "sustainedSamples": 65,
+    "sustainedRatioRange": [
+      0.4989827573299408,
+      0.5117719769477844
+    ],
+    "sustainedDroppedFrames": 0,
+    "underflowFramesAtFirstSustainedSample": 2562,
+    "underflowFramesAtLastSustainedSample": 3160
+  },
+  "limitations": [
+    "Digital measurements do not establish acoustic loudness or what a remote participant hears.",
+    "The English bundles have different permissions identities and require their own real-audio run.",
+    "A short repeat launch initially failed to discover its helper within two seconds; bounded helper startup was extended to eight seconds before this successful sustained run.",
+    "Underflow counters increased during the run; the check establishes gain and bounded connection behavior, not glitch-free playback.",
+    "Real calls, conferencing AEC/AGC, Bluetooth, Intel and broad OS/device compatibility are unvalidated."
+  ]
+}

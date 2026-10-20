@@ -5,7 +5,21 @@ struct VolumeSetting: Codable, Equatable {
     var volume: Double = 100
     var muted: Bool = false
     var name: String = ""
-    var gain: Float { muted ? 0 : Float(min(100, max(0, volume)) / 100) }
+    var gain: Float { muted ? 0 : Float(min(200, max(0, volume.isFinite ? volume : 100)) / 100) }
+}
+
+// Labels retain their real amplitude percentage. Only the travel is shaped,
+// giving normal listening levels more space than very quiet attenuation.
+enum VolumeScale {
+    static let unityPosition = 0.75
+    static func position(for volume: Double) -> Double {
+        let value = min(200, max(0, volume.isFinite ? volume : 100))
+        return value <= 100 ? unityPosition * pow(value / 100, 2) : unityPosition + (value - 100) / 100 * (1 - unityPosition)
+    }
+    static func volume(for position: Double) -> Double {
+        let value = min(1, max(0, position.isFinite ? position : unityPosition))
+        return value <= unityPosition ? 100 * sqrt(value / unityPosition) : 100 + (value - unityPosition) / (1 - unityPosition) * 100
+    }
 }
 
 struct EngineSnapshot: Codable {
@@ -26,6 +40,14 @@ struct EngineSessionDiagnostics: Codable {
     var inputPeak: Float
     var outputPeak: Float
     var processes: [AudioObjectID]
+    var captureSampleRate: Double
+    var renderSampleRate: Double
+    var physicalInputIOEnabled: UInt32
+    var captureCallbacks: UInt64
+    var queuedFrames: UInt64
+    var droppedFrames: UInt64
+    var underflowFrames: UInt64
+    var captureWaitingForInput: Bool
 }
 
 final class LocalAudioEngine {
@@ -34,6 +56,8 @@ final class LocalAudioEngine {
         var progressAt: TimeInterval
         var activeSince: TimeInterval?
         var invalidSince: TimeInterval?
+        var lastOutputCallbacks: UInt64 = 0
+        var outputProgressAt: TimeInterval?
     }
     private struct RetryState {
         var processes: [AudioObjectID]
@@ -53,6 +77,7 @@ final class LocalAudioEngine {
     private var enabled = false
     private var health: [String: SessionHealth] = [:]
     private var retries: [String: RetryState] = [:]
+    private var gainChangedAt: TimeInterval = 0
 
     init(sourceProvider: @escaping () -> [AudioSource] = SourceDiscovery.scan,
          outputProvider: @escaping () throws -> OutputDevice = HAL.defaultOutput) {
@@ -89,6 +114,17 @@ final class LocalAudioEngine {
     }
     func shutdown() { queue.sync { enabled = false; stopAll() } }
 
+    // Changing gain on an existing connection is only an atomic DSP update;
+    // device discovery and reconfiguration stay on the slower refresh path.
+    func updateGains(settings: [String: VolumeSetting], completion: @escaping () -> Void) {
+        queue.async {
+            self.settings = settings
+            self.gainChangedAt = ProcessInfo.processInfo.systemUptime
+            for (id, session) in self.sessions { session.setGain((settings[id] ?? VolumeSetting()).gain) }
+            DispatchQueue.main.async { completion() }
+        }
+    }
+
     func refresh(settings: [String: VolumeSetting], retry: Bool = false, completion: @escaping (EngineSnapshot) -> Void) {
         queue.async {
             self.settings = settings
@@ -120,7 +156,7 @@ final class LocalAudioEngine {
 
     func meters(completion: @escaping ([String: Float]) -> Void) {
         queue.async {
-            let levels = self.sessions.mapValues { $0.takePeak() }
+            let levels = self.sessions.mapValues { $0.takeOutputPeak() }
             DispatchQueue.main.async { completion(levels) }
         }
     }
@@ -132,7 +168,11 @@ final class LocalAudioEngine {
                                          callbacks: $0.callbacks, validCallbacks: $0.validCallbacks,
                                          invalidBuffers: $0.invalidBuffers, consecutiveInvalidBuffers: $0.consecutiveInvalidBuffers,
                                          processingActive: $0.processingActive, inputPeak: $0.takePeak(),
-                                         outputPeak: $0.takeOutputPeak(), processes: $0.processes)
+                                         outputPeak: $0.takeOutputPeak(), processes: $0.processes,
+                                         captureSampleRate: $0.captureSampleRate, renderSampleRate: $0.renderSampleRate,
+                                         physicalInputIOEnabled: $0.physicalInputIOEnabled, captureCallbacks: $0.captureCallbacks,
+                                         queuedFrames: $0.queuedFrames, droppedFrames: $0.droppedFrames,
+                                         underflowFrames: $0.underflowFrames, captureWaitingForInput: $0.captureWaitingForInput)
             }
             DispatchQueue.main.async { completion(values) }
         }
@@ -180,7 +220,10 @@ final class LocalAudioEngine {
             }
             return value
         }
-        let wanted = Set(scoped.filter { (settings[$0.id] ?? VolumeSetting()).gain != 1 && !$0.processes.isEmpty }.map(\.id))
+        let wanted = Set(scoped.filter {
+            !$0.processes.isEmpty && ((settings[$0.id] ?? VolumeSetting()).gain != 1 ||
+                (sessions[$0.id] != nil && now - gainChangedAt < 0.75))
+        }.map(\.id))
         for id in Array(sessions.keys) where !wanted.contains(id) { stopSession(id) }
         for id in Array(retries.keys) where !wanted.contains(id) {
             retries.removeValue(forKey: id)
@@ -220,15 +263,17 @@ final class LocalAudioEngine {
             let valid = session.validCallbacks
             let progressed = valid != status.lastValid
             if progressed { status.lastValid = valid; status.progressAt = now; status.invalidSince = nil }
+            if status.outputProgressAt == nil || session.callbacks != status.lastOutputCallbacks {
+                status.lastOutputCallbacks = session.callbacks; status.outputProgressAt = now
+            }
             guard source.running else {
-                // Auto-start waits for the source's first audio; pause/resume is also
-                // ordinary application behavior, not a broken connection.
+                // Pause/resume is ordinary application behavior, not a broken connection.
                 status.activeSince = nil; status.invalidSince = nil; status.progressAt = now
                 health[source.id] = status
                 continue
             }
             if status.activeSince == nil { status.activeSince = now; status.progressAt = now }
-            if !session.processingActive, valid >= 3, session.hasReceivedSignal {
+            if !session.processingActive, progressed, valid >= 3, session.hasReceivedSignal {
                 do {
                     try session.activateProcessing()
                     errors.removeValue(forKey: source.id)
@@ -243,12 +288,16 @@ final class LocalAudioEngine {
                 if status.invalidSince == nil { status.invalidSince = now }
             } else { status.invalidSince = nil }
             let activeFor = now - (status.activeSince ?? now)
-            let stalled = activeFor >= 5 && now - status.progressAt >= 5
+            let stalled = activeFor >= 5 && now - (status.outputProgressAt ?? now) >= 5
             let invalid = activeFor >= 5 && status.invalidSince.map { now - $0 >= 1 } == true
             if stalled || invalid {
                 let reason = invalid ? "Repeated invalid audio buffers" : "No valid audio received during playback"
                 recordFailure(source, message: reason + ". Original playback restored. Retry scheduled; you can also click Retry.", now: now)
                 continue
+            }
+            if session.processingActive, now - status.progressAt >= 5 {
+                do { try session.suspendProcessing() }
+                catch { recordFailure(source, message: error.localizedDescription, now: now); continue }
             }
             health[source.id] = status
         }
@@ -269,18 +318,28 @@ final class LocalAudioEngine {
     // Verify an unmuted, very quiet test source before any real app is intercepted.
     // A denied audio permission can otherwise return zero-filled buffers with no OSStatus error.
     private func verifyCapture() throws {
+        AudioTrace.event("begin", "verifyCapture")
+        defer { AudioTrace.event("end", "verifyCapture") }
         let executable = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/AudioProbe")
         guard FileManager.default.isExecutableFile(atPath: executable.path) else { throw AudioFailure(message: "Audio verification helper missing. Run build.sh again.") }
         let probe = Process()
         probe.executableURL = executable
         probe.arguments = ["25", "0.0003"]
         probe.standardOutput = FileHandle.nullDevice
-        probe.standardError = FileHandle.nullDevice
-        try probe.run()
-        defer { if probe.isRunning { probe.terminate() } }
+        probe.standardError = FileHandle.standardError
+        try AudioTrace.call("launchProbe") { try probe.run() }
+        defer { if probe.isRunning { _ = kill(probe.processIdentifier, SIGKILL) } }
         var object: AudioObjectID?
-        for _ in 0..<40 {
-            object = HAL.ids(HAL.system, kAudioHardwarePropertyProcessObjectList).first {
+        // First launch after an ad hoc rebuild can register its audio process
+        // later than a warm launch. Keep a bounded startup window independent
+        // of the signal/permission deadline, and stop promptly on helper exit.
+        let probeStartupDeadline = ProcessInfo.processInfo.systemUptime + 8
+        while ProcessInfo.processInfo.systemUptime < probeStartupDeadline {
+            guard probe.isRunning else {
+                AudioTrace.event("probeExitedBeforeDiscovery", "status=\(probe.terminationStatus)")
+                break
+            }
+            object = AudioTrace.call("findProbeProcess") { HAL.ids(HAL.system, kAudioHardwarePropertyProcessObjectList) }.first {
                 HAL.value($0, kAudioProcessPropertyPID, default: pid_t(0)) == probe.processIdentifier
             }
             if object != nil { break }

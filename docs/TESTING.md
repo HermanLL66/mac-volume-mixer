@@ -1,5 +1,16 @@
 # Testing and diagnostics
 
+## Version and evidence boundary
+
+The current source is an experimental 0.2.0 candidate. Shared-backend development measurements are recorded separately; this English bundle needs its own real-audio run. Commands below are tools for collecting evidence, not a statement that this version passed them. Historical 0.1.0 reports remain documented separately in [verification](VERIFICATION.md).
+
+For the revised path, test quiet signals with headroom at 0%, 25%, 50%, 100%, and 200%, then test overload separately. Compare the same independent capture method against a native baseline. Confirm that limiting keeps stereo channels linked and outputs finite, that gain transitions follow the 30 ms ramp at the tested sample rate, and that silence, idle/resume, process changes, buffer underflow/overflow, pause, and quit remain bounded.
+
+The 100% slider reference belongs at 75% of travel. This is a UI mapping; reported percentages must remain actual requested amplitude percentages. A 200% low-level signal should request 2× gain before limiting, not a guaranteed acoustic loudness.
+
+Inspect the output-only AUHAL input-I/O state and take read-only hardware input snapshots before/during/after. Do not record microphone audio or set microphone gain to run these checks. Unchanged hardware properties cannot establish conferencing AEC/AGC behavior or what a remote participant hears. An actual call with another listener is a separate manual check; Bluetooth and real calls remain unvalidated.
+
+
 
 Quit other instances of Volume Mixer before running an app-based diagnostic. Create the output directory first. Diagnostics save JSON reports; inspect `passed`, error/reason fields, and cleanup results instead of relying only on process exit status.
 
@@ -46,7 +57,7 @@ Open `Tests/BrowserAudio.html` in Chrome and click **Start test tone**. Keep it 
 open -n "dist/Volume Mixer.app" --args --verify-chrome "$PWD/output/chrome-verification.json"
 ```
 
-The check temporarily applies 50%, 25%, and mute to Chrome, compares independently captured digital output with its original baseline, then checks restoration and cleanup. Stop the fixture afterward.
+The check temporarily applies 50%, 25%, 150%, 200%, and mute to a quiet Chrome fixture, holds 50% for at least 60 seconds, compares independently captured digital output with its original baseline, then checks restoration and cleanup. Stop the fixture afterward.
 
 ### Inspect discovery
 

@@ -40,13 +40,13 @@ enum OutputVerification {
             report["helperProcessObjects"] = helperObjects
             let baselineMonitor = try OutputCaptureMonitor(processes: helperObjects, label: "helper", cleanup: cleanup)
             sourceCapture = baselineMonitor
-            _ = try awaitSignal(baselineMonitor, timeout: 2, reason: "Independent tap-only helper capture returned no valid signal")
+            _ = try awaitSignal(baselineMonitor, timeout: 2, reason: "Independent tap-only capture of the helper returned no valid signal")
             let nativePeaks = try stablePeaks(baselineMonitor)
             let originalPeak = (nativePeaks[0] + nativePeaks[1]) * 0.5
             report["originalHelperMixdownBaselineSamples"] = nativePeaks
             report["originalHelperMixdownPeak"] = originalPeak
             guard abs(nativePeaks[0] / nativePeaks[1] - 1) < 0.03 else {
-                throw AudioFailure(message: "Two independent native captures were unstable. Cannot establish a trustworthy baseline.")
+                throw AudioFailure(message: "Two independent native-playback captures were unstable; no reliable gain baseline was established")
             }
             report["nativeBaselineStable"] = true
             checks.append("Independent unmuted source tap captured two stable native-playback baseline intervals")
@@ -61,7 +61,7 @@ enum OutputVerification {
                 Thread.sleep(forTimeInterval: 0.03)
             }
             guard session.validCallbacks >= 3, inputPeak > 0.0000001 else {
-                throw AudioFailure(message: "Processing channel not ready. Original playback retained; output verification incomplete.")
+                throw AudioFailure(message: "Processing channel was not ready; native playback was retained and output verification is incomplete")
             }
             report["preparedInputPeak"] = inputPeak
             try session.activateProcessing()
@@ -72,7 +72,7 @@ enum OutputVerification {
             let downstream = try OutputCaptureMonitor(processes: ownObjects, label: "replay", cleanup: cleanup)
             replayCapture = downstream
             _ = try awaitSignal(downstream, timeout: 2,
-                                reason: "HAL replay signal unavailable for this process. Self-process or tap-only capture may be unsupported; output gain cannot be verified.")
+                                reason: "HAL did not return this process replay signal (self-process or tap-only capture may be unsupported); actual output gain cannot be verified")
 
             func measure(_ gain: Float) throws -> [String: Any] {
                 session.setGain(gain)
@@ -86,9 +86,9 @@ enum OutputVerification {
                 let observed = downstream.takePeak()
                 let independentSource = baselineMonitor.takePeak()
                 let received = downstream.callbacks - beforeCount
-                guard source > 0.0000001 else { throw AudioFailure(message: "Helper signal interrupted during verification") }
+                guard source > 0.0000001 else { throw AudioFailure(message: "Helper signal stopped during verification") }
                 guard received > 0 else {
-                    throw AudioFailure(message: "At gain \(gain), downstream capture had no callbacks. Missing data cannot count as verified silence.")
+                    throw AudioFailure(message: "No downstream capture callbacks at gain \(gain); missing data cannot establish verified mute")
                 }
                 return ["requestedGain": gain, "tapInputPeak": source, "producerOutputPeak": emitted,
                         "downstreamPeak": observed, "sourceMixdownPeak": independentSource,
@@ -104,13 +104,13 @@ enum OutputVerification {
             report["gainQuarter"] = quarter
             report["gainZero"] = muted
             guard let unityRatio = unity["downstreamToOriginalMixdownRatio"] as? Float, abs(unityRatio - 1) < 0.075 else {
-                throw AudioFailure(message: "Downstream HAL signal at 100% differs from the native baseline captured by the same method. Inspect gainOne.")
+                throw AudioFailure(message: "Downstream HAL signal at 100% did not match the same-method native baseline; inspect gainOne")
             }
             guard let quarterRatio = quarter["downstreamToOriginalMixdownRatio"] as? Float, abs(quarterRatio - 0.25) < 0.025 else {
-                throw AudioFailure(message: "Downstream HAL signal does not match 25% of the native baseline")
+                throw AudioFailure(message: "Downstream HAL signal did not reach 25% of the native baseline")
             }
             guard let mutedPeak = muted["downstreamPeak"] as? Float, mutedPeak < originalPeak * 0.001 else {
-                throw AudioFailure(message: "Muted downstream HAL signal exceeds the allowed noise threshold")
+                throw AudioFailure(message: "Muted downstream HAL signal exceeded the permitted noise threshold")
             }
             checks += ["Downstream HAL signal matches the same-method native-playback baseline at 100%", "Downstream HAL signal is 25% of the native baseline at quarter gain", "Downstream HAL capture continues and returns silence at zero gain"]
 
@@ -118,7 +118,7 @@ enum OutputVerification {
             report["controlStopErrors"] = controlErrors
             report["controlObjectsReleased"] = session.tap == 0 && session.aggregate == 0
             guard controlErrors.isEmpty, session.tap == 0, session.aggregate == 0 else {
-                throw AudioFailure(message: "Processing tap not fully released. Native output restoration cannot be confirmed.")
+                throw AudioFailure(message: "Control tap was not fully released; original playback restoration cannot be confirmed")
             }
             // Allow any buffers from the muted source's former gain stage to
             // drain before comparing two new native-playback capture intervals.
@@ -132,7 +132,7 @@ enum OutputVerification {
             let restored = restoredPeaks.allSatisfy { abs($0 / originalPeak - 1) < 0.075 } && abs(restoredPeaks[0] / restoredPeaks[1] - 1) < 0.03
             report["sourceCaptureAfterRestoreMatchesBaseline"] = restored
             guard restored else {
-                throw AudioFailure(message: "Independent helper signal did not return to baseline after release")
+                throw AudioFailure(message: "Independent helper signal did not return to its baseline after releasing control")
             }
             report["restorationEvidence"] = "Control tap successfully unmuted/destroyed; independent helper capture retains its original level. This does not acoustically measure native playback."
             checks.append("Control objects released and helper source capture retains its baseline")
@@ -144,7 +144,7 @@ enum OutputVerification {
             report["finalControlStopErrors"] = errors
             if !errors.isEmpty || control.tap != 0 || control.aggregate != 0 {
                 report["verified"] = false
-                report["reason"] = "Processing channel cleanup failed: " + errors.joined(separator: "; ")
+                report["reason"] = "Control-channel cleanup failed: " + errors.joined(separator: "; ")
             }
         }
         replayCapture?.stop()
@@ -160,7 +160,7 @@ enum OutputVerification {
         report["remainingNewTapObjects"] = remainingTaps.sorted()
         if !remainingTaps.isEmpty {
             report["verified"] = false
-            report["reason"] = "New tap objects remain after verification; cleanup incomplete"
+            report["reason"] = "New tap objects remained after verification; cleanup is incomplete"
         }
         if cleanup.hasUnreleasedObjects {
             report["verified"] = false
@@ -183,7 +183,7 @@ enum OutputVerification {
             if !objects.isEmpty { return objects.sorted() }
             Thread.sleep(forTimeInterval: 0.03)
         }
-        throw AudioFailure(message: "Verification audio process not found: \(pid)")
+        throw AudioFailure(message: "Could not discover verification audio process \(pid)")
     }
 
     private static func awaitSignal(_ monitor: OutputCaptureMonitor, timeout: TimeInterval, reason: String) throws -> Float {
@@ -204,7 +204,7 @@ enum OutputVerification {
             Thread.sleep(forTimeInterval: 0.3)
             let peak = monitor.takePeak()
             guard monitor.callbacks > beforeCount, peak > 0.0000001 else {
-                throw AudioFailure(message: "Native baseline capture interrupted. Missing or silent samples cannot be used as a reference.")
+                throw AudioFailure(message: "Native baseline capture stopped; missing or silent samples cannot serve as a reference")
             }
             peaks.append(peak)
         }
@@ -240,11 +240,11 @@ final class OutputCaptureMonitor {
             description.name = "Volume Mixer · Output verification · \(label)"
             description.isPrivate = true
             description.muteBehavior = .unmuted
-            try HAL.check(AudioHardwareCreateProcessTap(description, &tap), "Create independent output monitor tap")
+            try HAL.check(AudioHardwareCreateProcessTap(description, &tap), "Create independent output-monitor tap")
             let format = HAL.value(tap, kAudioTapPropertyFormat, default: AudioStreamBasicDescription())
             guard format.mFormatID == kAudioFormatLinearPCM, format.mBitsPerChannel == 32,
                   format.mFormatFlags & kAudioFormatFlagIsFloat != 0 else {
-                throw AudioFailure(message: "Independent output capture did not provide 32-bit float PCM")
+                throw AudioFailure(message: "Independent output capture did not provide Float32 PCM")
             }
             let spec: [String: Any] = [
                 kAudioAggregateDeviceNameKey: "Volume Mixer · Read-only output verification",
@@ -253,16 +253,16 @@ final class OutputCaptureMonitor {
                 kAudioAggregateDeviceTapAutoStartKey: false,
                 kAudioAggregateDeviceTapListKey: [[kAudioSubTapUIDKey: description.uuid.uuidString, kAudioSubTapDriftCompensationKey: true]]
             ]
-            try HAL.check(AudioHardwareCreateAggregateDevice(spec as CFDictionary, &aggregate), "Create read-only tap aggregate device")
+            try HAL.check(AudioHardwareCreateAggregateDevice(spec as CFDictionary, &aggregate), "Create read-only tap aggregate")
             let inputs = try HAL.buffers(aggregate, scope: kAudioObjectPropertyScopeInput)
             guard !inputs.isEmpty, inputs.reduce(0, +) > 0, inputs.reduce(0, +) <= 2 else {
-                throw AudioFailure(message: "Read-only tap aggregate has no usable stereo input")
+                throw AudioFailure(message: "Read-only tap aggregate provided no usable stereo input")
             }
             state = MixerDSPCreate(0, 0, UInt32(inputs.count), false)
             guard let state else { throw AudioFailure(message: "Could not allocate read-only output meter") }
-            try HAL.check(AudioDeviceCreateIOProcID(aggregate, MixerIOProc, UnsafeMutableRawPointer(state), &ioProc), "Create read-only output callback")
-            guard let ioProc else { throw AudioFailure(message: "Read-only output callback is missing") }
-            try HAL.check(AudioDeviceStart(aggregate, ioProc), "Start read-only output monitoring")
+            try HAL.check(AudioDeviceCreateIOProcID(aggregate, MixerIOProc, UnsafeMutableRawPointer(state), &ioProc), "Create read-only output-monitor callback")
+            guard let ioProc else { throw AudioFailure(message: "Read-only output-monitor callback was missing") }
+            try HAL.check(AudioDeviceStart(aggregate, ioProc), "Start read-only output monitor")
             started = true
         } catch { stop(); throw error }
     }

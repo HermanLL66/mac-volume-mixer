@@ -33,7 +33,7 @@ enum AudioVerification {
                 if monitor.takePeak() > 0.0000001 { authorized = true; break }
                 Thread.sleep(forTimeInterval: 0.1)
             }
-            guard authorized else { throw AudioFailure(message: "System audio access not verified: captured test signal is zero. No real applications were intercepted.") }
+            guard authorized else { throw AudioFailure(message: "System audio verification failed: captured test signal was zero; no real application was intercepted") }
             monitor.stop(); sessions.removeAll()
             let a = try TapSession(processes: [objects[0]], output: output, gain: 0.25)
             sessions.append(a)
@@ -52,7 +52,7 @@ enum AudioVerification {
             guard aInput > 0.0000001, bInput > 0.0000001 else { throw AudioFailure(message: "Independent processing channels received no test signal") }
             let aRatio = aOutput / aInput, bRatio = bOutput / bInput
             report["appAEmittedGain"] = aRatio; report["appBEmittedGain"] = bRatio
-            guard abs(aRatio - 0.25) < 0.01, abs(bRatio - 0.75) < 0.01 else { throw AudioFailure(message: "Output buffer gain does not match the requested setting") }
+            guard abs(aRatio - 0.25) < 0.01, abs(bRatio - 0.75) < 0.01 else { throw AudioFailure(message: "Emitted buffer gain does not match the requested setting") }
             a.setGain(0)
             Thread.sleep(forTimeInterval: 0.2)
             _ = a.takeOutputPeak(); _ = b.takeOutputPeak(); _ = b.takePeak()
@@ -61,10 +61,10 @@ enum AudioVerification {
             report["mutedAOutputPeak"] = mutedPeak
             report["appBGainWhileAMuted"] = stillPlayingInput > 0 ? stillPlayingPeak / stillPlayingInput : -1
             guard mutedPeak == 0, stillPlayingInput > 0, abs(stillPlayingPeak / stillPlayingInput - 0.75) < 0.01 else {
-                throw AudioFailure(message: "Muting one test process affected the other")
+                throw AudioFailure(message: "Muting one process affected another test process")
             }
             report["callbacksA"] = a.callbacks; report["callbacksB"] = b.callbacks
-            guard a.invalidBuffers == 0, b.invalidBuffers == 0 else { throw AudioFailure(message: "Invalid real-time buffer layout") }
+            guard a.invalidBuffers == 0, b.invalidBuffers == 0 else { throw AudioFailure(message: "Invalid real-time audio buffer layout") }
             sessions.forEach { $0.stop() }; sessions.removeAll()
             let after = HAL.value(HAL.system, kAudioHardwarePropertyDefaultOutputDevice, default: AudioObjectID(0))
             guard before == after else { throw AudioFailure(message: "System default output device changed") }

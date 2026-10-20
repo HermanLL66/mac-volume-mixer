@@ -24,6 +24,9 @@ final class MixerModel: ObservableObject {
     private var retryPending = false
     private var refreshWork: DispatchWorkItem?
     private var persistWork: DispatchWorkItem?
+    private var gainWork: DispatchWorkItem?
+    private var gainInFlight = false
+    private var gainRevision = 0
     private var lastRefresh: TimeInterval = 0
     private var generation = 0
     private var closed = false
@@ -56,15 +59,17 @@ final class MixerModel: ObservableObject {
     func setting(for id: String) -> VolumeSetting { settings[id] ?? VolumeSetting() }
     func setVolume(_ value: Double, for source: AudioSource) {
         var setting = setting(for: source.id)
-        setting.volume = min(100, max(0, value)); setting.muted = false; setting.name = source.name
+        setting.volume = min(200, max(0, value.isFinite ? value : 100)); setting.muted = false; setting.name = source.name
         settings[source.id] = setting
-        persist(); refresh(force: true)
+        persist(); scheduleGains()
+        if enabled && !controlled.contains(source.id) { refresh(force: true) }
     }
     func toggleMute(_ source: AudioSource) {
         var setting = setting(for: source.id)
         setting.muted.toggle(); setting.name = source.name
         settings[source.id] = setting
-        persist(); refresh(force: true)
+        persist(); scheduleGains()
+        if enabled && !controlled.contains(source.id) { refresh(force: true) }
     }
     func toggleEnabled() {
         guard !closed else { return }
@@ -138,6 +143,25 @@ final class MixerModel: ObservableObject {
         refreshWork?.cancel(); refreshWork = nil
         refreshInFlight = false; meterInFlight = false
         refreshPending = false; retryPending = false
+        gainWork?.cancel(); gainWork = nil; gainInFlight = false
+    }
+    private func scheduleGains() {
+        gainRevision += 1
+        guard enabled, !starting, !closed, gainWork == nil, !gainInFlight else { return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.gainWork = nil
+            guard self.enabled, !self.starting, !self.closed else { return }
+            self.gainInFlight = true
+            let token = self.generation, revision = self.gainRevision
+            self.engine.updateGains(settings: self.settings) { [weak self] in
+                guard let self, token == self.generation else { return }
+                self.gainInFlight = false
+                if self.gainRevision != revision { self.scheduleGains() }
+            }
+        }
+        gainWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 / 30, execute: work)
     }
     private func persist() {
         persistWork?.cancel()

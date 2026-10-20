@@ -1,5 +1,23 @@
 # Compatibility and test coverage
 
+## Experimental 0.2.0 candidate
+
+The current source changes the backend to tap-only capture plus output-only AUHAL rendering, adds 0–200% controls and peak limiting, and uses a new interface. The shared backend has local development-bundle results; this English bundle still needs a real-audio run. Historical 0.1.0 results below must not be presented as candidate compatibility results.
+
+| Candidate configuration or behavior | Status |
+| --- | --- |
+| Native interface at normal and minimum sizes | Visually reviewed with sample data; no audio validation |
+| Built-in stereo output, 0–200% digital gain and limiter | Pending revised-backend test |
+| Capture/render buffering and cleanup after idle or process restart | Pending revised-backend test |
+| Read-only hardware input state | Pending; cannot establish remote voice levels or conferencing processing |
+| Actual conferencing calls and far-end listening | Not validated |
+| Bluetooth/AirPods, USB, HDMI, multichannel | Not validated |
+| Intel and additional macOS versions | Not validated |
+
+The intended scope is per-application mono/stereo playback on macOS 14.4 or later. A minimum deployment target is not a tested compatibility guarantee.
+
+## Historical 0.1.0 coverage
+
 Volume Mixer targets macOS 14.4 or later. The initial downloadable build is for Apple Silicon. This table separates observed results from configurations that still need testing.
 
 | Configuration or behavior | Status | Evidence |

@@ -14,17 +14,28 @@ struct MixerDSP {
     _Atomic uint64_t validCallbacks;
     _Atomic uint64_t consecutiveInvalid;
     _Atomic bool receivedSignal;
-    float currentGain;
+    double currentGain;
+    float rampTarget;
+    double rampStep;
+    uint32_t rampLength;
+    uint32_t rampRemaining;
+    double limiterGain;
+    double limiterRelease;
     uint32_t firstInputBuffer;
     uint32_t inputBufferCount;
     _Atomic bool playback;
 };
 
-static float clampGain(float value) { return isfinite(value) ? fmaxf(0, fminf(1, value)) : 1; }
+static float clampGain(float value) { return isfinite(value) ? fmaxf(0, fminf(2, value)) : 1; }
 
 MixerDSP *MixerDSPCreate(float gain, uint32_t start, uint32_t count, bool playback) {
+    return MixerDSPCreateWithSampleRate(gain, start, count, playback, 48000);
+}
+
+MixerDSP *MixerDSPCreateWithSampleRate(float gain, uint32_t start, uint32_t count, bool playback, double sampleRate) {
     MixerDSP *state = calloc(1, sizeof(MixerDSP));
     if (!state) return NULL;
+    if (!isfinite(sampleRate) || sampleRate < 1000 || sampleRate > 768000) sampleRate = 48000;
     atomic_init(&state->targetGain, clampGain(gain));
     atomic_init(&state->peak, 0);
     atomic_init(&state->outputPeak, 0);
@@ -34,6 +45,10 @@ MixerDSP *MixerDSPCreate(float gain, uint32_t start, uint32_t count, bool playba
     atomic_init(&state->consecutiveInvalid, 0);
     atomic_init(&state->receivedSignal, false);
     state->currentGain = clampGain(gain);
+    state->rampTarget = clampGain(gain);
+    state->rampLength = (uint32_t)ceil(sampleRate * 0.030);
+    state->limiterGain = 1;
+    state->limiterRelease = exp(-1.0 / (sampleRate * 0.080));
     state->firstInputBuffer = start;
     state->inputBufferCount = count;
     atomic_init(&state->playback, playback);
@@ -65,7 +80,7 @@ static float sample(const AudioBufferList *input, uint32_t start, uint32_t count
 }
 
 // The audio thread only touches preallocated memory and lock-free atomics.
-// The tap and physical output share one aggregate clock; there is no growing queue.
+// Process prepared input frames. The transport owns clock bridging and buffering.
 void MixerDSPProcess(MixerDSP *state, const AudioBufferList *input, AudioBufferList *output) {
     atomic_fetch_add_explicit(&state->callbacks, 1, memory_order_relaxed);
     for (uint32_t b = 0; b < output->mNumberBuffers; ++b) {
@@ -105,30 +120,45 @@ void MixerDSPProcess(MixerDSP *state, const AudioBufferList *input, AudioBufferL
     } else {
         atomic_store_explicit(&state->consecutiveInvalid, 0, memory_order_relaxed);
     }
-    float initial = state->currentGain;
+    if (target != state->rampTarget) {
+        state->rampTarget = target;
+        state->rampRemaining = state->rampLength;
+        state->rampStep = ((double)target - state->currentGain) / state->rampLength;
+    }
     float peak = 0, outputPeak = 0;
     // Capture meters also work when playback is disabled for the permission check.
     for (uint32_t f = 0; f < inputFrames; ++f) {
         float l = sample(input, state->firstInputBuffer, state->inputBufferCount, f, 0);
         float r = inputChannels > 1 ? sample(input, state->firstInputBuffer, state->inputBufferCount, f, 1) : l;
         peak = fmaxf(peak, fmaxf(fabsf(l), fabsf(r)));
+        if (state->rampRemaining > 0) {
+            state->currentGain += state->rampStep;
+            if (--state->rampRemaining == 0) state->currentGain = state->rampTarget;
+        }
         if (!playback || f >= frames) continue;
-        float gain = initial + (target - initial) * fminf(1, (float)(f + 1) / 128);
+        // Work in double so even a malformed but finite Float32 input cannot
+        // overflow when boosted. One limiter coefficient preserves stereo balance.
+        double left = (double)l * state->currentGain, right = (double)r * state->currentGain;
+        double mono = (left + right) * 0.5;
+        double framePeak = outputChannels == 1 ? fabs(mono) : fmax(fabs(left), fabs(right));
+        double requestedLimit = framePeak > 1 ? 1 / framePeak : 1;
+        if (requestedLimit < state->limiterGain) state->limiterGain = requestedLimit;
+        else state->limiterGain = requestedLimit + (state->limiterGain - requestedLimit) * state->limiterRelease;
         uint32_t channelOffset = 0;
         for (uint32_t b = 0; b < output->mNumberBuffers; ++b) {
             AudioBuffer *buffer = &output->mBuffers[b];
             if (buffer->mData) {
                 for (uint32_t c = 0; c < buffer->mNumberChannels; ++c) {
                     uint32_t channel = channelOffset + c;
-                    float value = outputChannels == 1 ? (l + r) * 0.5f : (channel == 0 ? l : (channel == 1 ? r : 0));
-                    ((float *)buffer->mData)[(uint64_t)f * buffer->mNumberChannels + c] = value * gain;
-                    outputPeak = fmaxf(outputPeak, fabsf(value * gain));
+                    double value = outputChannels == 1 ? mono : (channel == 0 ? left : (channel == 1 ? right : 0));
+                    float limited = (float)fmax(-1, fmin(1, value * state->limiterGain));
+                    ((float *)buffer->mData)[(uint64_t)f * buffer->mNumberChannels + c] = limited;
+                    outputPeak = fmaxf(outputPeak, fabsf(limited));
                 }
             }
             channelOffset += buffer->mNumberChannels;
         }
     }
-    state->currentGain = initial + (target - initial) * fminf(1, (float)inputFrames / 128);
     if (peak > 0.0000001f) atomic_store_explicit(&state->receivedSignal, true, memory_order_relaxed);
     float oldPeak = atomic_load_explicit(&state->peak, memory_order_relaxed);
     while (peak > oldPeak && !atomic_compare_exchange_weak_explicit(&state->peak, &oldPeak, peak, memory_order_relaxed, memory_order_relaxed)) {}

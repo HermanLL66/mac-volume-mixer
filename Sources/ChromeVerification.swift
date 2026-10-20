@@ -27,7 +27,7 @@ enum ChromeVerification {
             _ = monitor.takePeak(); let before = monitor.callbacks
             Thread.sleep(forTimeInterval: 0.35)
             let value = monitor.takePeak()
-            guard monitor.callbacks > before else { throw AudioFailure(message: "Monitoring channel received no audio callbacks") }
+            guard monitor.callbacks > before else { throw AudioFailure(message: "Monitor received no audio callbacks") }
             return value
         }
         func objects(pid: pid_t) -> [AudioObjectID] {
@@ -46,7 +46,7 @@ enum ChromeVerification {
                 if source != nil { break }
                 Thread.sleep(forTimeInterval: 0.3)
             }
-            guard let source else { throw AudioFailure(message: "Chrome is not playing audio. Click Start test tone on the fixture page first.") }
+            guard let source else { throw AudioFailure(message: "Chrome is not playing audio; click Start test tone on the fixture page first") }
             report["chromeProcesses"] = source.processes.map { object -> [String: Any] in
                 ["object": object, "pid": HAL.value(object, kAudioProcessPropertyPID, default: pid_t(0)),
                  "running": HAL.value(object, kAudioProcessPropertyIsRunningOutput, default: UInt32(0)),
@@ -83,7 +83,7 @@ enum ChromeVerification {
                 report["deviceScopedCleanup"] = deviceMonitor.stop()
             }
             guard baseA > 0.0000001, baseB > 0.0000001, abs(baseA / baseB - 1) < 0.04 else {
-                throw AudioFailure(message: "Chrome native signal is zero or unstable. Use the local fixture and allow system audio access.")
+                throw AudioFailure(message: "Chrome native signal is zero or unstable; use the local fixture page and allow system audio access")
             }
             let native = (baseA + baseB) / 2
             checks.append("Real Chrome produces a stable native signal")
@@ -99,21 +99,21 @@ enum ChromeVerification {
                 if snapshot.controlled.contains(source.id) { connected = true; break }
                 Thread.sleep(forTimeInterval: 0.2)
             }
-            guard connected, let worker = engine.workerPID else { throw AudioFailure(message: "Chrome audio connection did not become valid") }
+            guard connected, let worker = engine.workerPID else { throw AudioFailure(message: "Chrome did not establish a valid audio connection") }
             report["workerPID"] = worker
             let workerObjects = objects(pid: worker)
-            guard !workerObjects.isEmpty else { throw AudioFailure(message: "Audio worker output not found") }
+            guard !workerObjects.isEmpty else { throw AudioFailure(message: "No output from the audio worker was discovered") }
             report["workerObjects"] = workerObjects
             let replay = try OutputCaptureMonitor(processes: workerObjects, label: "Chrome-replay", cleanup: cleanup)
             monitors.append(replay)
             checks.append("Real Chrome connects through production AudioEngine worker")
             save("measuringGains")
             var samples: [[String: Any]] = []
-            for volume in [50.0, 25.0, 0.0] {
+            for volume in [50.0, 25.0, 150.0, 200.0, 0.0] {
                 let snapshot: EngineSnapshot = try awaitValue {
                     engine.refresh(settings: [source.id: VolumeSetting(volume: volume, muted: false, name: source.name)], completion: $0)
                 }
-                guard snapshot.errors.isEmpty, snapshot.controlled.contains(source.id) else { throw AudioFailure(message: "Chrome connection interrupted during adjustment") }
+                guard snapshot.errors.isEmpty, snapshot.controlled.contains(source.id) else { throw AudioFailure(message: "Chrome connection stopped while changing volume") }
                 Thread.sleep(forTimeInterval: 0.2)
                 let observed = try peak(replay), ratio = observed / native
                 let diagnostics: [String: EngineSessionDiagnostics] = try awaitValue { engine.diagnostics(completion: $0) }
@@ -124,24 +124,53 @@ enum ChromeVerification {
                 report["gainSamples"] = samples; save("measuringGains")
                 let expected = Float(volume / 100)
                 guard abs(ratio - expected) < (volume == 0 ? 0.001 : 0.04) else {
-                    throw AudioFailure(message: "Chrome digital output does not match the requested \(Int(volume))% gain")
+                    throw AudioFailure(message: "Chrome digital output did not match the requested \(Int(volume))%")
                 }
             }
-            checks.append("Independent replay capture matches Chrome native baseline at 50%, 25% and mute")
+            checks.append("Independent replay capture matches Chrome native baseline at 50%, 25%, 150%, 200% and mute for a low-level signal")
+            // Keep the real production worker active beyond setup and several
+            // watchdog intervals; silence/boost checks alone are short snapshots.
+            save("sustainedPlayback")
+            let sustainStart = ProcessInfo.processInfo.systemUptime
+            var sustained: [[String: Any]] = []
+            while ProcessInfo.processInfo.systemUptime - sustainStart < 60 {
+                let snapshot: EngineSnapshot = try awaitValue {
+                    engine.refresh(settings: [source.id: VolumeSetting(volume: 50, muted: false, name: source.name)], completion: $0)
+                }
+                guard snapshot.errors.isEmpty, snapshot.controlled.contains(source.id) else { throw AudioFailure(message: "Sustained Chrome playback lost its connection or valid output-only transport") }
+                Thread.sleep(forTimeInterval: 0.2)
+                let ratio = try peak(replay) / native
+                let stats: [String: EngineSessionDiagnostics] = try awaitValue { engine.diagnostics(completion: $0) }
+                guard let transport = stats[source.id], transport.processingActive,
+                      transport.physicalInputIOEnabled == 0, transport.consecutiveInvalidBuffers == 0 else {
+                    throw AudioFailure(message: "Sustained Chrome playback lost its connection or valid output-only transport")
+                }
+                sustained.append(["elapsedSeconds": ProcessInfo.processInfo.systemUptime - sustainStart,
+                                  "relativeToNative": ratio, "captureRate": transport.captureSampleRate,
+                                  "renderRate": transport.renderSampleRate, "physicalInputIOEnabled": transport.physicalInputIOEnabled,
+                                  "queuedFrames": transport.queuedFrames, "droppedFrames": transport.droppedFrames,
+                                  "underflowFrames": transport.underflowFrames])
+                report["sustainedSamples"] = sustained
+                save("sustainedPlayback")
+                guard abs(ratio - 0.5) < 0.04 else { throw AudioFailure(message: "Sustained Chrome playback deviated from the 50% native baseline") }
+                Thread.sleep(forTimeInterval: 0.35)
+            }
+            report["sustainedSeconds"] = ProcessInfo.processInfo.systemUptime - sustainStart
+            checks.append("Real Chrome sustained 50% independent replay for at least 60 seconds with physical input I/O disabled")
             save("restoringNative")
             let _: Bool = try awaitValue { callback in engine.disable { callback(true) } }
             Thread.sleep(forTimeInterval: 0.3)
             report["workerStopError"] = engine.lastStopError ?? ""
             report["workerExited"] = kill(worker, 0) != 0
             guard engine.lastStopError == nil, engine.workerPID == nil, kill(worker, 0) != 0 else {
-                throw AudioFailure(message: "Audio worker did not clean up and exit normally")
+                throw AudioFailure(message: "Audio worker did not complete cleanup and exit normally")
             }
             let restored = try peak(baseline)
             report["restoredNativePeak"] = restored
-            guard abs(restored / native - 1) < 0.04 else { throw AudioFailure(message: "Chrome did not return to the native signal baseline after release") }
+            guard abs(restored / native - 1) < 0.04 else { throw AudioFailure(message: "Chrome did not return to its native signal baseline after releasing control") }
             checks.append("Disable restores Chrome native baseline")
             for monitor in monitors { monitor.stop() }; monitors.removeAll()
-            guard !cleanup.hasUnreleasedObjects else { throw AudioFailure(message: "Independent monitoring channel not fully released") }
+            guard !cleanup.hasUnreleasedObjects else { throw AudioFailure(message: "Independent monitor was not fully released") }
             // A foreign client cannot inspect private taps. Cleanup evidence is
             // each owner's successful destroy replies and the worker's exit.
             // Retain the observer's local list as diagnostics, not a global leak test.

@@ -5,8 +5,8 @@
     <key>CFBundleIdentifier</key><string>io.github.HaomingLyu613.VolumeMixer</string>
     <key>CFBundleName</key><string>Volume Mixer</string>
     <key>CFBundleDisplayName</key><string>Volume Mixer</string>
-    <key>CFBundleVersion</key><string>1</string>
-    <key>CFBundleShortVersionString</key><string>0.1.0</string>
+    <key>CFBundleVersion</key><string>4</string>
+    <key>CFBundleShortVersionString</key><string>0.2.0</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>LSMinimumSystemVersion</key><string>14.4</string>

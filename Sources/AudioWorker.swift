@@ -31,6 +31,8 @@ final class AudioEngine {
     private var buffer = Data()
     private var pending: (id: UUID, done: (Result<AudioWorkerReply, Error>) -> Void)?
     private var waitingRefresh: (settings: [String: VolumeSetting], retry: Bool, done: (EngineSnapshot) -> Void)?
+    private var waitingGains: (() -> Void)?
+    private var desiredSettings: [String: VolumeSetting] = [:]
     private var deadline: DispatchWorkItem?
     private var generation = UUID()
     private var blocked = false
@@ -66,6 +68,7 @@ final class AudioEngine {
 
     func refresh(settings: [String: VolumeSetting], retry: Bool = false, completion: @escaping (EngineSnapshot) -> Void) {
         queue.async {
+            self.desiredSettings = settings
             if retry && self.blocked { self.blocked = false }
             guard !self.blocked, !self.stopping else {
                 let value = self.snapshot
@@ -82,7 +85,7 @@ final class AudioEngine {
                 self.waitingRefresh = (settings, retry, completion)
                 return
             }
-            self.send("refresh", settings: settings, retry: retry, timeout: self.requestTimeout) { result in
+            self.send("refresh", settings: self.desiredSettings, retry: retry, timeout: self.requestTimeout) { result in
                 if case .success(let reply) = result, let value = reply.snapshot {
                     self.snapshot = value
                     if value.errors.values.contains(where: { $0.contains("not fully released") }) {
@@ -91,6 +94,23 @@ final class AudioEngine {
                 }
                 let value = self.snapshot
                 DispatchQueue.main.async { completion(value) }
+            }
+        }
+    }
+
+    func updateGains(settings: [String: VolumeSetting], completion: @escaping () -> Void) {
+        queue.async {
+            self.desiredSettings = settings
+            guard !self.blocked, !self.stopping, self.process != nil else {
+                DispatchQueue.main.async { completion() }; return
+            }
+            guard self.pending == nil else {
+                if let previous = self.waitingGains { DispatchQueue.main.async { previous() } }
+                self.waitingGains = completion
+                return
+            }
+            self.send("gains", settings: self.desiredSettings, timeout: self.requestTimeout) { _ in
+                DispatchQueue.main.async { completion() }
             }
         }
     }
@@ -155,8 +175,10 @@ final class AudioEngine {
         _ = fcntl(descriptor, F_SETFL, fcntl(descriptor, F_GETFL) | O_NONBLOCK)
         let logURL = FileManager.default.temporaryDirectory.appendingPathComponent("VolumeMixer-audio-worker-\(getpid()).log")
         // A single bounded log for diagnostics, with operation names and status only.
-        try? Data().write(to: logURL)
-        child.standardError = (try? FileHandle(forWritingTo: logURL)) ?? FileHandle.nullDevice
+        if !FileManager.default.fileExists(atPath: logURL.path) { try? Data().write(to: logURL) }
+        let logHandle = try? FileHandle(forWritingTo: logURL)
+        _ = try? logHandle?.seekToEnd()
+        child.standardError = logHandle ?? FileHandle.nullDevice
         let token = UUID(); generation = token
         let readDescriptor = outgoing.fileHandleForReading.fileDescriptor
         _ = fcntl(readDescriptor, F_SETFL, fcntl(readDescriptor, F_GETFL) | O_NONBLOCK)
@@ -189,7 +211,7 @@ final class AudioEngine {
                     self.pending = nil; self.deadline?.cancel(); self.deadline = nil
                     if let message = reply.error { callback?(.failure(AudioFailure(message: message))) }
                     else { callback?(.success(reply)) }
-                    self.drainRefresh()
+                    self.drainQueued()
                 }
             }
         }
@@ -234,10 +256,16 @@ final class AudioEngine {
         callback?(.failure(AudioFailure(message: reason)))
     }
 
-    private func drainRefresh() {
-        guard pending == nil, !stopping, let waiting = waitingRefresh else { return }
+    private func drainQueued() {
+        guard pending == nil, !stopping else { return }
+        if let gainDone = waitingGains {
+            waitingGains = nil
+            updateGains(settings: desiredSettings, completion: gainDone)
+            return
+        }
+        guard let waiting = waitingRefresh else { return }
         waitingRefresh = nil
-        refresh(settings: waiting.settings, retry: waiting.retry, completion: waiting.done)
+        refresh(settings: desiredSettings, retry: waiting.retry, completion: waiting.done)
     }
 
     private func endWorker(reason: String) {
@@ -249,6 +277,7 @@ final class AudioEngine {
         try? output?.close(); output = nil
         buffer.removeAll()
         let waiting = waitingRefresh; waitingRefresh = nil
+        let gains = waitingGains; waitingGains = nil
         // SIGKILL targets a Process we still own and that Foundation has not reaped.
         // It also covers a worker stuck in a Mach RPC during teardown.
         if let child, child.isRunning { _ = Darwin.kill(child.processIdentifier, SIGKILL) }
@@ -257,6 +286,7 @@ final class AudioEngine {
             let value = snapshot
             DispatchQueue.main.async { waiting.done(value) }
         }
+        if let gains { DispatchQueue.main.async { gains() } }
     }
 }
 
@@ -272,7 +302,7 @@ enum AudioWorkerServer {
         }
         // If the UI is killed or its pipe closes, terminate even if HAL cleanup is
         // blocked. The worker cannot outlive its owner and keep intercepting sound.
-        let parentWatch = DispatchSource.makeTimerSource(queue: .main)
+        let parentWatch = DispatchSource.makeTimerSource(queue: .global(qos: .userInteractive))
         parentWatch.schedule(deadline: .now() + 0.5, repeating: 0.5)
         parentWatch.setEventHandler { if getppid() != parent { _exit(0) } }
         parentWatch.resume()
@@ -311,6 +341,8 @@ enum AudioWorkerServer {
                     engine.refresh(settings: request.settings ?? [:], retry: request.retry ?? false) {
                         reply(AudioWorkerReply(id: request.id, snapshot: $0))
                     }
+                case "gains":
+                    engine.updateGains(settings: request.settings ?? [:]) { reply(AudioWorkerReply(id: request.id)) }
                 case "meters": engine.meters { reply(AudioWorkerReply(id: request.id, levels: $0)) }
                 case "diagnostics": engine.diagnostics { reply(AudioWorkerReply(id: request.id, diagnostics: $0)) }
                 default: reply(AudioWorkerReply(id: request.id, error: "Unknown audio operation"))

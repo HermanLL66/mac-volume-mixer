@@ -57,12 +57,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         model = MixerModel(automaticRefresh: !verifying)
         if verifying { model.cancelExternalWork = { NSApp.terminate(nil) } }
         if CommandLine.arguments.contains("--restore-default-volumes") { model.resetAll() }
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 780), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 800), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.title = "Volume Mixer"
         window.appearance = NSAppearance(named: .aqua)
         window.titlebarAppearsTransparent = true
         window.toolbarStyle = .unifiedCompact
-        window.minSize = NSSize(width: 580, height: 680)
+        window.minSize = NSSize(width: 540, height: 640)
         window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         window.contentView = NSHostingView(rootView: MixerView(model: model).padding(.top, 24).preferredColorScheme(.light))
         window.isReleasedWhenClosed = false
