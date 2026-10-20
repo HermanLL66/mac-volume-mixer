@@ -16,6 +16,28 @@ I'm looking for feedback on first launch, audio permissions, and app/device comp
 
 Project and download: https://github.com/HermanLL66/mac-volume-mixer
 
+## r/macapps monthly App Pile comment
+
+Use this version only after meeting the community's participation requirements. It is a draft, not a published comment.
+
+**[OS] Volume Mixer: free per-app volume and mute for macOS**
+
+I'm the maker of Volume Mixer.
+
+**Problem:** Lower a browser or background music without changing the volume of everything else. Volume Mixer provides individual 0–100% volume, mute, saved settings, search, and menu bar access. Audio is processed locally in memory, with no recording or uploads.
+
+**Comparison:** SoundSource is an established paid alternative. Volume Mixer's advantage is that all features and the full MIT-licensed source are free to use and modify. SoundSource offers per-app output routing and audio effects, which Volume Mixer does not provide. This early release has limited app/device coverage, so I cannot claim comparable reliability.
+
+**Pricing:** $0 for all features, with no subscription or account. Source, download, installation guide, and compatibility notes: https://github.com/HermanLL66/mac-volume-mixer
+
+Apple Silicon download, macOS 14.4+. The binary is ad hoc signed and not notarized; source-build instructions are available. The README animation uses sample data and is labeled as an interface preview. Actual generated-signal verification results are documented separately.
+
+Feedback on first launch, audio permissions, and your app/output-device combination would help.
+
+Suggested attachment: `docs/assets/interface-preview.png`. Caption: "Interface preview with sample apps and values; not a live capture."
+
+Comparison source checked on 2026-10-20: [SoundSource's official feature page](https://www.rogueamoeba.com/soundsource/).
+
 ## Show HN
 
 **Title:** Show HN: A native open-source per-app volume mixer for macOS
@@ -46,4 +68,8 @@ Volume Mixer for macOS: free, open-source per-app volume and mute, with saved se
 
 ## Publication notes
 
-[Show HN's guidelines](https://news.ycombinator.com/showhn.html) require something people can try, maker participation, and no coordinated upvoting. Read [r/macapps](https://www.reddit.com/r/macapps/) rules in the current posting interface before submission; the public rules page did not expose readable rules during preparation. Do not assume that a particular post format or promotion frequency is permitted.
+[Show HN's guidelines](https://news.ycombinator.com/showhn.html) require something people can try, maker participation, and no coordinated upvoting.
+
+The logged-in [r/macapps posting interface](https://www.reddit.com/r/macapps/submit/) was checked on 2026-10-20. Its rules require 10 local community karma before self-promotion and limit promotion to once per developer per 30 days, including removed posts. New projects that do not meet the trust/transparency criteria belong in the monthly App Pile. The [October App Pile](https://www.reddit.com/r/macapps/comments/1wuoav5/megathread_the_app_pile_october_2026/) requires Problem, Comparison, and Pricing, an explicit competitor, and a project/site link rather than a direct ZIP/DMG link. Use an `[OS]` prefix for open source. Read the current rules again before submission; they can change.
+
+Do not post promotional comments before meeting the participation requirements, manufacture participation to farm karma, or repost removed submissions to evade moderation. No Reddit submission has been published as part of this preparation.
