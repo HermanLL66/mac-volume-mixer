@@ -1,0 +1,57 @@
+name: Audio bug or compatibility report
+description: Report a problem or a working app/device configuration.
+title: "[Audio]: "
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for testing Volume Mixer. Please share only relevant technical details; remove personal information from logs."
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - Audio control is not working as expected
+        - Installation or permission problem
+        - Working configuration to add to the compatibility table
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Volume Mixer version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and CPU architecture
+      placeholder: "macOS 14.6.1, Apple Silicon"
+    validations:
+      required: true
+  - type: input
+    id: audio_app
+    attributes:
+      label: App and version being controlled
+      placeholder: "App name and version"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Audio output device
+      placeholder: "Built-in speakers, headphone model, or audio interface"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps, expected behavior, and observed result
+      description: "Include whether Enable succeeded, whether the app appeared, and what happened when changing volume or mute."
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Optional sanitized diagnostic details
+      description: "Do not attach audio recordings, private app content, credentials, or personal filesystem paths."

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Installation and audio permissions
+    url: https://github.com/HermanLL66/mac-volume-mixer/blob/main/docs/GETTING_STARTED.md
+    about: Read the quick-start and troubleshooting guide first.
+  - name: Tested configurations
+    url: https://github.com/HermanLL66/mac-volume-mixer/blob/main/docs/COMPATIBILITY.md
+    about: See which configurations have actually been checked.

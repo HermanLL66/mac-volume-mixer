@@ -1,0 +1,90 @@
+{
+  "environment": {
+    "date": "2026-10-20",
+    "appVersion": "0.1.0",
+    "sourceCommit": "c81a188e8ff0ec77bc8e044e254be82c9b8dace3",
+    "macOS": "14.6.1",
+    "architecture": "arm64",
+    "output": "Built-in stereo speakers"
+  },
+  "verified": true,
+  "audioSaved": false,
+  "sampleRate": 48000,
+  "measurement": "Independent unmuted HAL process-mixdown capture of mixer replay, compared with native helper playback captured by the same process-mixdown method before control. This is not an acoustic speaker measurement.",
+  "acousticSpeakerLoudnessVerified": false,
+  "systemVolumeModified": false,
+  "nativeBaselineStable": true,
+  "controlObjectsReleased": true,
+  "sourceCaptureAfterRestoreMatchesBaseline": true,
+  "controlStopErrors": [],
+  "finalControlStopErrors": [],
+  "cleanupOperations": [
+    {
+      "monitor": "replay",
+      "operation": "AudioDeviceStop",
+      "status": 0
+    },
+    {
+      "monitor": "replay",
+      "operation": "AudioDeviceDestroyIOProcID",
+      "status": 0
+    },
+    {
+      "monitor": "replay",
+      "operation": "AudioHardwareDestroyAggregateDevice",
+      "status": 0
+    },
+    {
+      "monitor": "replay",
+      "operation": "AudioHardwareDestroyProcessTap",
+      "status": 0
+    },
+    {
+      "monitor": "helper",
+      "operation": "AudioDeviceStop",
+      "status": 0
+    },
+    {
+      "monitor": "helper",
+      "operation": "AudioDeviceDestroyIOProcID",
+      "status": 0
+    },
+    {
+      "monitor": "helper",
+      "operation": "AudioHardwareDestroyAggregateDevice",
+      "status": 0
+    },
+    {
+      "monitor": "helper",
+      "operation": "AudioHardwareDestroyProcessTap",
+      "status": 0
+    }
+  ],
+  "checks": [
+    "Independent unmuted source tap captured two stable native-playback baseline intervals",
+    "Downstream HAL signal matches the same-method native-playback baseline at 100%",
+    "Downstream HAL signal is 25% of the native baseline at quarter gain",
+    "Downstream HAL capture continues and returns silence at zero gain",
+    "Control objects released and helper source capture retains its baseline"
+  ],
+  "gainSamples": [
+    {
+      "requestedGain": 1,
+      "downstreamToOriginalMixdownRatio": 0.9999997615814209,
+      "downstreamPeak": 0.00039999993168748915,
+      "downstreamCallbacks": 38
+    },
+    {
+      "requestedGain": 0.25,
+      "downstreamToOriginalMixdownRatio": 0.24999983608722687,
+      "downstreamPeak": 9.99999392661266e-05,
+      "downstreamCallbacks": 38
+    },
+    {
+      "requestedGain": 0,
+      "downstreamToOriginalMixdownRatio": 0,
+      "downstreamPeak": 0,
+      "downstreamCallbacks": 38
+    }
+  ]
+}

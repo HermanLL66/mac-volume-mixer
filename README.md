@@ -1,12 +1,24 @@
 # Volume Mixer for macOS
 
-**Set the right volume for every app.**
+![Volume Mixer: every app, your volume](docs/assets/social-preview.png)
 
-Volume Mixer is a native Mac app that gives individual applications their own playback volume and mute controls. Keep a video audible, lower background music, or silence one app while the others keep playing.
+**Turn down one app. Keep the rest of your mix.**
 
-Built with SwiftUI, AppKit, and Core Audio. Audio stays on your Mac.
+Volume Mixer is a free, open-source Mac app with independent playback volume and mute controls. Lower a browser, balance background music, or silence one app while the others keep playing. Built with SwiftUI, AppKit, and Core Audio; audio stays on your Mac.
 
-[Download](https://github.com/HaomingLyu613/mac-volume-mixer/releases/latest) · [Build from source](#build-from-source) · [Testing](docs/TESTING.md) · [Report a bug](https://github.com/HaomingLyu613/mac-volume-mixer/issues)
+[![Download for Apple Silicon](docs/assets/download.svg)](https://github.com/HermanLL66/mac-volume-mixer/releases/download/v0.1.0/Volume-Mixer-0.1.0-macOS-arm64.zip)
+
+**macOS 14.4+ · Apple Silicon · MIT license · Early release**
+
+The download is ad hoc signed and not notarized by Apple. Read the [first-launch guide](docs/GETTING_STARTED.md) before trying it.
+
+[Release notes](https://github.com/HermanLL66/mac-volume-mixer/releases/latest) · [Quick start](docs/GETTING_STARTED.md) · [Tested configurations](docs/COMPATIBILITY.md) · [Build from source](#build-from-source) · [Report an audio issue](https://github.com/HermanLL66/mac-volume-mixer/issues/new?template=audio_bug.yml)
+
+## See the controls
+
+<img src="docs/assets/interface-demo.gif" width="560" alt="Interface preview with sample apps: original volume, independent settings, individual mute, and reset" />
+
+*Interface preview rendered from the actual SwiftUI view with sample apps and values. This is not a live audio recording or a third-party app compatibility test. The [separate audio checks](docs/VERIFICATION.md) document measured behavior.*
 
 ## Features
 
@@ -34,11 +46,13 @@ The source build targets the current machine's architecture. Intel builds are no
 
 ## Install
 
-1. Download the Apple Silicon ZIP from [Releases](https://github.com/HaomingLyu613/mac-volume-mixer/releases/latest).
+![Download, allow audio access, then adjust a slider](docs/assets/quick-start.png)
+
+1. Download the Apple Silicon ZIP from [Releases](https://github.com/HermanLL66/mac-volume-mixer/releases/latest).
 2. Extract it and move **Volume Mixer.app** to your Applications folder.
 3. Open Volume Mixer, then follow the audio permission steps below.
 
-The initial release is an **ad hoc signed, unnotarized build**. It is not signed with an Apple Developer ID, and macOS may prevent a downloaded copy from opening. You can also build the app locally from the source below. Signature verification and checksums do not replace Apple notarization.
+The initial release is an **ad hoc signed, unnotarized build**. It is not signed with an Apple Developer ID, and macOS may prevent a downloaded copy from opening. Follow the [first-launch guide](docs/GETTING_STARTED.md) or build locally from source. Signature verification and checksums do not replace Apple notarization.
 
 ## Use
 
@@ -63,7 +77,7 @@ Protected media, exclusive devices, unusual audio formats, and some special-purp
 Install Apple's Command Line Tools with Swift and an SDK containing the Core Audio tap APIs, then run:
 
 ```sh
-git clone https://github.com/HaomingLyu613/mac-volume-mixer.git
+git clone https://github.com/HermanLL66/mac-volume-mixer.git
 cd mac-volume-mixer
 ./build.sh
 open "dist/Volume Mixer.app"
@@ -86,8 +100,16 @@ The fast checks cover DSP behavior and mock-worker lifecycle failures without in
 
 See [verification status](docs/VERIFICATION.md) for checks performed on this release and [architecture](docs/ARCHITECTURE.md) for the implementation map.
 
+## Help test your apps and devices
+
+The standalone build has passed generated-signal and independent digital-output checks on macOS 14.6.1 with Apple Silicon and built-in stereo speakers. Broader third-party app and device coverage still needs testing; see the [compatibility table](docs/COMPATIBILITY.md).
+
+If you try it, a [working configuration or reproducible audio report](https://github.com/HermanLL66/mac-volume-mixer/issues/new?template=audio_bug.yml) helps other Mac users know what to expect. Include your app version, macOS version, output device, and result. No audio recording is needed.
+
 ## Feedback and license
 
 When reporting a problem, include your macOS version, CPU architecture, output device, affected app, reproduction steps, and expected/actual behavior. Remove personal information from logs before sharing them.
 
 Released under the [MIT License](LICENSE).
+
+If you find Volume Mixer useful, consider giving the repository a star. It helps other Mac users discover it.

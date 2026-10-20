@@ -20,4 +20,4 @@ Grant system audio access when enabling control. The first verification plays a 
 
 ## Verification and limits
 
-The packaged build is checked with strict local signature verification, DSP sanitizer tests, and mock-worker checks. Real-audio diagnostics have not been rerun under the new standalone bundle identifier. Protected media, exclusive devices, and unusual audio paths may be unsupported. Intel downloads are not included.
+The packaged build is checked with strict local signature verification, DSP sanitizer tests, and mock-worker checks. The standalone binary has also passed generated-signal and independent downstream digital-output checks on macOS 14.6.1 with Apple Silicon and built-in stereo speakers. This does not establish broad third-party app compatibility or acoustic loudness. Protected media, exclusive devices, and unusual audio paths may be unsupported. Intel downloads are not included.

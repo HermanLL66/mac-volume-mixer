@@ -13,6 +13,22 @@ The following local checks passed for version 0.1.0:
 
 The GitHub workflow repeats the fast checks on a hosted macOS runner. See the repository's Actions tab for hosted results.
 
-The real-audio, sustained-engine, independent-output, and Chrome diagnostics are included in [TESTING.md](TESTING.md). They require a suitable output device and system audio permission. They have not been rerun under this standalone product's new bundle identifier.
+## Real audio checks for the standalone bundle
+
+On October 20, 2026, the shipping `0.1.0` standalone bundle was checked on macOS 14.6.1, Apple Silicon, built-in stereo speakers at 48 kHz. No audio files were saved.
+
+| Check | Observed result | Evidence |
+| --- | --- | --- |
+| Two real temporary audio processes | Processing-buffer gains of 0.25 and 0.75 | [Generated-audio result](verification/generated-audio.json) |
+| Independent mute | The first output peak was zero; the second retained approximately 0.75 gain | [Generated-audio result](verification/generated-audio.json) |
+| Default output preservation | Before/after device identity matched | [Generated-audio result](verification/generated-audio.json) |
+| Independent downstream capture at 100% | Approximately 1.0 relative to the same-method native baseline | [Independent-output result](verification/independent-output.json) |
+| Independent downstream capture at 25% | Approximately 0.25 relative to that baseline | [Independent-output result](verification/independent-output.json) |
+| Independent downstream capture at mute | Callbacks continued and the captured peak was zero | [Independent-output result](verification/independent-output.json) |
+| Output-check cleanup | Control objects released, monitor cleanup succeeded, source capture retained its baseline | [Independent-output result](verification/independent-output.json) |
+
+The public JSON files select relevant results and omit local process/object identifiers and device identifiers. The [testing guide](TESTING.md) contains the commands needed to reproduce these checks. These measurements concern digital audio paths and do not measure acoustic speaker loudness.
+
+Chrome and other third-party app compatibility have not been validated for this standalone edition. The interface animation is rendered from the shipping SwiftUI view with clearly labeled sample data, separately from these audio tests. It is not a screen recording of a real app session.
 
 Compilation and mock tests do not establish compatibility with every application or device. Intel builds, broad OS/device coverage, acoustic measurements, Apple Developer ID signing, and notarization are not part of this initial release.

@@ -1,0 +1,26 @@
+{
+  "environment": {
+    "date": "2026-10-20",
+    "appVersion": "0.1.0",
+    "sourceCommit": "c81a188e8ff0ec77bc8e044e254be82c9b8dace3",
+    "macOS": "14.6.1",
+    "architecture": "arm64",
+    "output": "Built-in stereo speakers"
+  },
+  "passed": true,
+  "audioSaved": false,
+  "sampleRate": 48000,
+  "appAEmittedGain": 0.25,
+  "appBEmittedGain": 0.75,
+  "appBGainWhileAMuted": 0.7500000596046448,
+  "mutedAOutputPeak": 0,
+  "defaultOutputPreserved": true,
+  "checks": [
+    "Nonzero audio captured with system permission",
+    "Two actual audio processes routed independently",
+    "App A emits 25% while B emits 75%",
+    "Muting A leaves B at 75%",
+    "No malformed audio buffers",
+    "Taps destroyed and default output preserved"
+  ]
+}
