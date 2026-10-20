@@ -1,0 +1,38 @@
+name: Build and test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test DSP with sanitizers
+        run: ./test.sh
+      - name: Build and verify local bundle signature
+        run: ./build.sh
+      - name: Verify worker without real audio
+        run: |
+          mkdir -p output
+          python3 - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+          report = Path('output/worker-verification.json')
+          subprocess.run(
+              ['./dist/Volume Mixer.app/Contents/MacOS/VolumeMixer',
+               '--verify-worker', str(report.resolve())],
+              check=True, timeout=30,
+          )
+          result = json.loads(report.read_text())
+          print(json.dumps(result, indent=2))
+          if result.get('passed') is not True:
+              raise SystemExit('Worker verification failed')
+          PY

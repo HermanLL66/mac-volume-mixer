@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+    <key>CFBundleExecutable</key><string>VolumeMixer</string>
+    <key>CFBundleIdentifier</key><string>io.github.HaomingLyu613.VolumeMixer</string>
+    <key>CFBundleName</key><string>Volume Mixer</string>
+    <key>CFBundleDisplayName</key><string>Volume Mixer</string>
+    <key>CFBundleVersion</key><string>1</string>
+    <key>CFBundleShortVersionString</key><string>0.1.0</string>
+    <key>CFBundleIconFile</key><string>AppIcon</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>LSMinimumSystemVersion</key><string>14.4</string>
+    <key>NSHighResolutionCapable</key><true/>
+    <key>NSPrincipalClass</key><string>NSApplication</string>
+    <key>NSAudioCaptureUsageDescription</key><string>Adjust the local playback volume of individual applications. Audio is processed in memory, never saved or uploaded.</string>
+</dict></plist>

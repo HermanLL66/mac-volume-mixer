@@ -1,0 +1,9 @@
+.DS_Store
+.build/
+dist/
+output/
+release/
+.env
+.env.*
+*.log
+*.zip

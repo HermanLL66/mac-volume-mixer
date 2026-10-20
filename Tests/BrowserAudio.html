@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Volume Mixer · Browser audio fixture</title>
+<style>body{font:16px system-ui;background:#f5f8f7;color:#193c39;max-width:650px;margin:80px auto;padding:24px}button{font:inherit;padding:12px 18px;margin:8px;border:0;border-radius:10px;background:#197b72;color:white}output{display:block;margin:24px 8px;line-height:1.8}</style>
+<h1>Browser audio fixture</h1><p>Plays a very quiet local test tone. No recording or uploads.</p>
+<button id="start">Start test tone</button><button id="pause">Pause</button><button id="resume">Resume</button><button id="stop">Stop and release audio</button>
+<output id="status">Not started</output>
+<script>
+let context, oscillator, gain;
+async function start(){if(context)await context.close();context=new AudioContext();oscillator=context.createOscillator();gain=context.createGain();oscillator.frequency.value=997;gain.gain.value=.0004;oscillator.connect(gain).connect(context.destination);oscillator.start();await context.resume();document.querySelector('#status').textContent='Playing test tone · 997 Hz · Very low volume';}
+document.querySelector('#start').onclick=start;
+document.querySelector('#pause').onclick=async()=>{if(context){await context.suspend();document.querySelector('#status').textContent='Paused · Audio device may become idle';}};
+document.querySelector('#resume').onclick=async()=>{if(context){await context.resume();document.querySelector('#status').textContent='Playback resumed';}};
+document.querySelector('#stop').onclick=async()=>{if(context){await context.close();context=null;document.querySelector('#status').textContent='Audio device released';}};
+</script></html>
