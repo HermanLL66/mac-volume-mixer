@@ -2,7 +2,7 @@
 
 ## Version and evidence boundary
 
-The current source is an experimental 0.2.0 candidate. Shared-backend development measurements are recorded separately; this English bundle needs its own real-audio run. Commands below are tools for collecting evidence, not a statement that this version passed them. Historical 0.1.0 reports remain documented separately in [verification](VERIFICATION.md).
+The current source builds the experimental 0.2.0 pre-release. Shared-backend development measurements are recorded separately; this English bundle needs its own real-audio run. Commands below are tools for collecting evidence, not a statement that this version passed them. Historical 0.1.0 reports remain documented separately in [verification](VERIFICATION.md).
 
 For the revised path, test quiet signals with headroom at 0%, 25%, 50%, 100%, and 200%, then test overload separately. Compare the same independent capture method against a native baseline. Confirm that limiting keeps stereo channels linked and outputs finite, that gain transitions follow the 30 ms ramp at the tested sample rate, and that silence, idle/resume, process changes, buffer underflow/overflow, pause, and quit remain bounded.
 

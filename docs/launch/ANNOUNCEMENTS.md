@@ -8,9 +8,9 @@ These are prepared copy, not evidence that a post has been published. Check each
 
 Hi! I'm sharing Volume Mixer, a small native Mac app for adjusting individual apps' playback volume.
 
-The use case is simple: lower a browser or background music without changing everything else. It provides 0–100% volume, individual mute, saved settings, search, and menu bar access. Audio is processed locally in memory, with no recording or uploads. The source is MIT licensed.
+The use case is simple: lower a browser or background music without changing everything else. It provides 0–200% volume, individual mute, saved settings, search, and menu bar access. Audio is processed locally in memory, with no recording or uploads. The source is MIT licensed.
 
-This is an early release for Apple Silicon and macOS 14.4+. The download is ad hoc signed and not notarized, so macOS may block it; source-build instructions are included. Third-party app and device coverage is still limited. The README animation is an interface preview with sample data; the separate verification page describes the actual generated-signal checks.
+This is an experimental 0.2.0 pre-release for Apple Silicon and macOS 14.4+. The download is ad hoc signed and not notarized, so macOS may block it; source-build instructions are included. Third-party app and device coverage is still limited. The README image is a native interface render labeled SAMPLE DATA. English-bundle real-audio checks remain pending; shared-backend development measurements are documented separately.
 
 I'm looking for feedback on first launch, audio permissions, and app/device compatibility. If you try it, which app, macOS version, and output device worked or failed?
 
@@ -24,13 +24,13 @@ Use this version only after meeting the community's participation requirements. 
 
 I'm the maker of Volume Mixer.
 
-**Problem:** Lower a browser or background music without changing the volume of everything else. Volume Mixer provides individual 0–100% volume, mute, saved settings, search, and menu bar access. Audio is processed locally in memory, with no recording or uploads.
+**Problem:** Lower a browser or background music without changing the volume of everything else. Volume Mixer provides individual 0–200% volume, mute, saved settings, search, and menu bar access. Audio is processed locally in memory, with no recording or uploads.
 
-**Comparison:** SoundSource is an established paid alternative. Volume Mixer's advantage is that all features and the full MIT-licensed source are free to use and modify. SoundSource offers per-app output routing and audio effects, which Volume Mixer does not provide. This early release has limited app/device coverage, so I cannot claim comparable reliability.
+**Comparison:** SoundSource is an established paid alternative. Volume Mixer's advantage is that all features and the full MIT-licensed source are free to use and modify. SoundSource offers per-app output routing and audio effects, which Volume Mixer does not provide. This experimental pre-release has limited app/device coverage, so I cannot claim comparable reliability.
 
 **Pricing:** $0 for all features, with no subscription or account. Source, download, installation guide, and compatibility notes: https://github.com/HermanLL66/mac-volume-mixer
 
-Apple Silicon download, macOS 14.4+. The binary is ad hoc signed and not notarized; source-build instructions are available. The README animation uses sample data and is labeled as an interface preview. Actual generated-signal verification results are documented separately.
+Apple Silicon download, macOS 14.4+. The binary is ad hoc signed and not notarized; source-build instructions are available. The README image is labeled SAMPLE DATA. The verification page separates shared-backend development measurements from pending English-bundle real-audio checks.
 
 Feedback on first launch, audio permissions, and your app/output-device combination would help.
 
@@ -50,18 +50,19 @@ I'm sharing a native macOS utility for independent application playback volume a
 
 I wanted a small control panel for balancing multiple audio sources. Settings are saved by application identity, and pause/quit release the processing path. Audio stays in memory on the Mac.
 
-It's an early Apple Silicon build targeting macOS 14.4+. The binary is not Developer ID signed or notarized, and broad app/device compatibility is not established. The repository includes source builds, a compatibility table, diagnostic instructions, and explicit evidence limits.
+It's an experimental 0.2.0 Apple Silicon pre-release targeting macOS 14.4+. The binary is not Developer ID signed or notarized, and broad app/device compatibility is not established. The repository includes source builds, a compatibility table, diagnostic instructions, and explicit evidence limits.
 
 I'd welcome feedback on the installation experience and any reproducible audio/device failures. I can answer questions about the process-tap path, worker deadlines, and cleanup.
 
 ## Short social post
 
-Volume Mixer for macOS: free, open-source per-app volume and mute, with saved settings and menu bar access. Audio stays on your Mac. Early Apple Silicon release, macOS 14.4+; not yet notarized. Feedback welcome: https://github.com/HermanLL66/mac-volume-mixer
+Volume Mixer for macOS: free, open-source per-app volume and mute, with saved settings and menu bar access. Audio stays on your Mac. Experimental Apple Silicon pre-release, macOS 14.4+; not yet notarized. Feedback welcome: https://github.com/HermanLL66/mac-volume-mixer
 
 ## Assets and claims
 
 - Cover: `docs/assets/social-preview.png` (1280 × 640).
-- Interface animation: `docs/assets/interface-demo.gif` (sample data, explicitly labeled).
+- Current interface: `docs/assets/interface-preview.png` (sample data, explicitly labeled).
+- Historical 0.1.0 animation: `docs/assets/interface-demo.gif` (earlier UI, sample data).
 - Setup illustration: `docs/assets/quick-start.png`.
 - Verified results: `docs/VERIFICATION.md` and `docs/verification/`.
 - Do not claim universal app support, measured acoustic loudness, zero latency, notarization, or an independent security audit.

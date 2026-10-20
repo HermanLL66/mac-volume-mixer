@@ -1,6 +1,10 @@
 # Release notes
 
-## 0.2.0 — experimental source candidate, no published binary
+## 0.2.0 — experimental pre-release
+
+[Download for Apple Silicon](https://github.com/HermanLL66/mac-volume-mixer/releases/download/v0.2.0/Volume-Mixer-0.2.0-macOS-arm64.zip) · [Version-specific release page](https://github.com/HermanLL66/mac-volume-mixer/releases/tag/v0.2.0)
+
+The ZIP contains **Volume Mixer.app**, requires macOS 14.4 or later, and is ad hoc signed without Apple Developer ID signing or notarization. The release includes a SHA-256 checksum. Packaging and fast checks passed locally; this English bundle still needs its own real-audio validation.
 
 - Refined SwiftUI interface with warm ivory/graphite surfaces, playing/all-app filters, continuous controls, and one global issue notice.
 - 0–200% amplitude settings, with 100% unity at 75% slider travel and a 30 ms gain ramp.
@@ -9,13 +13,13 @@
 - Approximately 20 ms added buffer target, in addition to device and scheduling latency.
 - No microphone capture or gain setting. Hardware input checks are read-only and do not prove unchanged conferencing echo cancellation or far-end voice levels.
 
-Local development-bundle measurements of the shared backend are recorded separately; real audio for the English bundle remains pending. Real calls, Bluetooth, broader devices, and OS coverage are not validated. The new interface image uses labeled sample data. The download remains 0.1.0; do not describe these changes as present in that ZIP.
+Local development-bundle measurements of the shared backend are recorded separately; real audio for the English bundle remains pending. Real calls, Bluetooth, broader devices, and OS coverage are not validated. The new interface image uses labeled sample data. The 0.2.0 download is an experimental pre-release, separate from the historical 0.1.0 ZIP.
 
 ## 0.1.0 — downloadable historical release
 
 Initial standalone release of the native macOS per-app volume controller.
 
-## Included
+### Included
 
 - Independent app volume from 0% to 100% and individual mute.
 - Audio-source discovery, search, and saved preferences.
@@ -23,7 +27,7 @@ Initial standalone release of the native macOS per-app volume controller.
 - Local in-memory audio processing with no recording or upload.
 - Source code, build scripts, DSP tests, and audio diagnostics.
 
-## Download
+### Download
 
 `Volume-Mixer-0.1.0-macOS-arm64.zip` contains **Volume Mixer.app** for Apple Silicon and requires macOS 14.4 or later. Extract the ZIP and move the app to Applications. `SHA256SUMS.txt` provides the download checksum.
 
@@ -31,6 +35,6 @@ This is an early, ad hoc signed build without Apple Developer ID signing or nota
 
 Grant system audio access when enabling control. The first verification plays a very quiet generated tone. The controls target local playback. The release does not intentionally set microphone gain, but far-end call behavior was not established by its tests. Browser tabs share a single app volume.
 
-## Verification and limits
+### Verification and limits
 
 The packaged build is checked with strict local signature verification, DSP sanitizer tests, and mock-worker checks. The standalone binary has also passed generated-signal and independent downstream digital-output checks on macOS 14.6.1 with Apple Silicon and built-in stereo speakers. This does not establish broad third-party app compatibility or acoustic loudness. Protected media, exclusive devices, and unusual audio paths may be unsupported. Intel downloads are not included.

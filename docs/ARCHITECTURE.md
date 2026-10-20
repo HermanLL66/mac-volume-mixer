@@ -1,6 +1,6 @@
-# Architecture of the experimental 0.2.0 source
+# Architecture of the experimental 0.2.0 pre-release
 
-This document describes the current source candidate. The downloadable 0.1.0 release uses the earlier audio path; its successful checks are historical evidence, not validation of this revision.
+This document describes the source for the current pre-release. The historical downloadable 0.1.0 release uses the earlier audio path; its successful checks are historical evidence, not validation of this revision.
 
 Volume Mixer is a native macOS application. The interface and audio integration run in separate processes so an unresponsive audio operation can be bounded without freezing the controls.
 

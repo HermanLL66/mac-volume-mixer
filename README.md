@@ -6,15 +6,15 @@
 
 Volume Mixer is a free, open-source Mac app with independent playback volume and mute controls. Lower a browser, balance background music, or silence one app while the others keep playing. Built with SwiftUI, AppKit, and Core Audio; audio stays on your Mac.
 
-[![Download for Apple Silicon](docs/assets/download.svg)](https://github.com/HermanLL66/mac-volume-mixer/releases/download/v0.1.0/Volume-Mixer-0.1.0-macOS-arm64.zip)
+[![Download for Apple Silicon](docs/assets/download.svg)](https://github.com/HermanLL66/mac-volume-mixer/releases/download/v0.2.0/Volume-Mixer-0.2.0-macOS-arm64.zip)
 
-**macOS 14.4+ · Apple Silicon · MIT license · Early release**
+**macOS 14.4+ · Apple Silicon · MIT license · Experimental pre-release**
 
-**Version boundary:** the downloadable release above is **0.1.0**, with 0–100% controls and the earlier interface. Current source is the **0.2.0 experimental candidate**, with a new interface, 0–200% settings, and a revised audio path. No 0.2.0 binary is published here. The shared backend has local development-bundle checks; real audio under this English bundle identity remains pending. [Historical checks](docs/VERIFICATION.md) do not validate this candidate.
+**Version boundary:** the download is **0.2.0, an experimental pre-release**, with the new interface, 0–200% settings, and revised audio path. Packaging and fast checks passed locally; real audio under this English bundle identity remains pending. [Shared-backend development measurements and historical 0.1.0 checks](docs/VERIFICATION.md) have separate scopes. The earlier [0.1.0 release](https://github.com/HermanLL66/mac-volume-mixer/releases/tag/v0.1.0) remains available with its original 0–100% controls.
 
 The download is ad hoc signed and not notarized by Apple. Read the [first-launch guide](docs/GETTING_STARTED.md) before trying it.
 
-[Release notes](https://github.com/HermanLL66/mac-volume-mixer/releases/latest) · [Quick start](docs/GETTING_STARTED.md) · [Tested configurations](docs/COMPATIBILITY.md) · [Build from source](#build-from-source) · [Report an audio issue](https://github.com/HermanLL66/mac-volume-mixer/issues/new?template=audio_bug.yml)
+[Release notes](https://github.com/HermanLL66/mac-volume-mixer/releases/tag/v0.2.0) · [Quick start](docs/GETTING_STARTED.md) · [Tested configurations](docs/COMPATIBILITY.md) · [Build from source](#build-from-source) · [Report an audio issue](https://github.com/HermanLL66/mac-volume-mixer/issues/new?template=audio_bug.yml)
 
 ## See the controls
 
@@ -22,7 +22,7 @@ The download is ad hoc signed and not notarized by Apple. Read the [first-launch
 
 *The new SwiftUI interface is rendered with explicitly labeled sample data. The preview demonstrates layout, not live audio or app compatibility. The [earlier 0.1.0 interface animation](docs/assets/interface-demo.gif) is retained as a historical asset. Read the [separate audio verification record](docs/VERIFICATION.md) for evidence boundaries.*
 
-## Features in the experimental source
+## Features in the 0.2.0 experimental pre-release
 
 - **Per-app volume:** independent settings from 0% to 200%, with individual mute. 100% means unity gain; 200% requests twice the signal amplitude before limiting.
 - **Continuous controls:** a shaped slider gives everyday listening levels more travel; the 100% reference sits at 75% of the track. A 30 ms gain ramp smooths changes.
@@ -35,7 +35,7 @@ The download is ad hoc signed and not notarized by Apple. Read the [first-launch
 - **Pause and reset:** release processing while keeping preferences, or restore all apps to 100%.
 - **Local audio processing:** no audio recording, uploads, accounts, or network service.
 
-These describe the current source candidate, not additions to the 0.1.0 download. The app works with discovered audio sources rather than a preset list of messaging, browser, or music apps. Compatibility depends on each app's audio path and the connected output device.
+These describe the 0.2.0 pre-release. The historical 0.1.0 download retains its earlier features. The app works with discovered audio sources rather than a preset list of messaging, browser, or music apps. Compatibility depends on each app's audio path and the connected output device.
 
 ## Requirements
 
@@ -46,23 +46,23 @@ These describe the current source candidate, not additions to the 0.1.0 download
 | Intended output | System default mono or stereo speakers/headphones; actual device compatibility requires testing |
 | Permission | System audio access, granted through macOS |
 
-The source build targets the current machine's architecture. Intel builds are not included in the initial download and have not been validated.
+The source build targets the current machine's architecture. Intel builds are not included in the download and have not been validated.
 
 ## Install
 
 ![Download, allow audio access, then adjust a slider](docs/assets/quick-start.png)
 
-1. Download the Apple Silicon ZIP from [Releases](https://github.com/HermanLL66/mac-volume-mixer/releases/latest).
+1. Download the [0.2.0 experimental Apple Silicon ZIP](https://github.com/HermanLL66/mac-volume-mixer/releases/download/v0.2.0/Volume-Mixer-0.2.0-macOS-arm64.zip). Pre-releases do not appear as GitHub’s latest stable release; use this version-specific link.
 2. Extract it and move **Volume Mixer.app** to your Applications folder.
 3. Open Volume Mixer, then follow the audio permission steps below.
 
-The initial release is an **ad hoc signed, unnotarized build**. It is not signed with an Apple Developer ID, and macOS may prevent a downloaded copy from opening. Follow the [first-launch guide](docs/GETTING_STARTED.md) or build locally from source. Signature verification and checksums do not replace Apple notarization.
+The pre-release is an **ad hoc signed, unnotarized build**. It is not signed with an Apple Developer ID, and macOS may prevent a downloaded copy from opening. Follow the [first-launch guide](docs/GETTING_STARTED.md) or build locally from source. Signature verification and checksums do not replace Apple notarization.
 
 ## Use
 
 1. Start audio playback in the apps you want to control.
 2. Click **Enable** in Volume Mixer. Allow system audio access when macOS asks. Initial verification plays a very quiet generated tone.
-3. Drag an app's slider or click its speaker button to mute or unmute it. Preferences are saved automatically. The 0.1.0 download offers 0–100%; experimental source extends this to 200%.
+3. Drag an app's slider or click its speaker button to mute or unmute it. Preferences are saved automatically. The 0.2.0 pre-release offers 0–200%; 100% is the original amplitude.
 4. Click **Pause** to restore original playback while retaining preferences, or **Reset all** to restore every saved setting to 100% and unmute it.
 5. Close the window to keep the app available in the menu bar. Use **Quit** to release the app's audio resources.
 
@@ -72,7 +72,7 @@ If audio verification fails, check **System Settings > Privacy & Security > Scre
 
 Volume Mixer targets the audio you hear on this Mac. Browser tabs share their browser's app volume; this is not a per-tab mixer.
 
-The experimental backend uses a tap-only private aggregate for capture and a separate output-only AUHAL renderer, with physical input I/O disabled. It has no microphone capture or microphone-gain-setting feature. That implementation boundary does **not** prove that a call participant will hear an unchanged voice: conferencing software may react through its own echo cancellation or gain control. Read-only hardware input checks cannot establish the far-end call result. Real calls and Bluetooth devices have not been validated for this candidate.
+The 0.2.0 backend uses a tap-only private aggregate for capture and a separate output-only AUHAL renderer, with physical input I/O disabled. It has no microphone capture or microphone-gain-setting feature. That implementation boundary does **not** prove that a call participant will hear an unchanged voice: conferencing software may react through its own echo cancellation or gain control. Read-only hardware input checks cannot establish the far-end call result. Real calls and Bluetooth devices have not been validated for this pre-release.
 
 Separating capture and rendering adds a buffer target of approximately 20 ms, in addition to device and scheduling latency. The actual delay depends on the configuration.
 

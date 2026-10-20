@@ -1,8 +1,8 @@
 # Verification status by version
 
-## Experimental 0.2.0 source candidate
+## Experimental 0.2.0 pre-release
 
-The source introduces a different capture/render path, gain range, ramp, limiter, and interface. Earlier passing results do not validate these changes. No 0.2.0 release binary is published.
+The source introduces a different capture/render path, gain range, ramp, limiter, and interface. Earlier passing results do not validate these changes. The 0.2.0 binary is published as an experimental pre-release; English-bundle real-audio validation remains pending.
 
 | Check | Current status | What it can establish |
 | --- | --- | --- |
@@ -13,11 +13,11 @@ The source introduces a different capture/render path, gain range, ramp, limiter
 | Real conferencing call and human listening | Not validated | Needed to check local sound, remote voice level, and conferencing processing |
 | Bluetooth and broader device coverage | Not validated | Requires actual device-specific sessions |
 
-The [current preview](assets/interface-preview.png) says **SAMPLE DATA**. It is a render of the view, not an audio demonstration. A successful hardware-state comparison would not prove that conferencing echo cancellation or automatic gain control is unaffected. See [testing](TESTING.md) for the candidate checklist.
+The [current preview](assets/interface-preview.png) says **SAMPLE DATA**. It is a render of the view, not an audio demonstration. A successful hardware-state comparison would not prove that conferencing echo cancellation or automatic gain control is unaffected. See [testing](TESTING.md) for the pre-release checklist.
 
 ## Shared-backend development measurements
 
-On October 20, 2026, the local development bundle 1.1.0 was checked on macOS 14.6.1, Apple Silicon, built-in stereo output at 48 kHz. It uses the revised backend shared by this source candidate. This is **not** a real-audio result for the English 0.2.0 bundle: its distinct identity requires its own permission and integration check. The [sanitized record](verification/revised-backend-local.json) omits local paths, process/object IDs, and device identifiers.
+On October 20, 2026, the local development bundle 1.1.0 was checked on macOS 14.6.1, Apple Silicon, built-in stereo output at 48 kHz. It uses the revised backend shared by this pre-release. This is **not** a real-audio result for the English 0.2.0 bundle: its distinct identity requires its own permission and integration check. The [sanitized record](verification/revised-backend-local.json) omits local paths, process/object IDs, and device identifiers.
 
 - A 20.24-second engine exercise passed two independent sources, more than four seconds of actual idle/resume, process restart and in-place replacement, independent mute, and cleanup.
 - Default input and output identity, sample rate, and supported volume/mute controls remained unchanged; each observed output AUHAL had physical input I/O disabled. No microphone audio was recorded.

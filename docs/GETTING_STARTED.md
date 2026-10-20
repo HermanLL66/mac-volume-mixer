@@ -6,13 +6,13 @@ The graphic is an illustrated setup guide. It is not a screenshot of System Sett
 
 ## Version choice
 
-The published ZIP is **0.1.0**, with the earlier interface and 0–100% range. Current source is the **experimental 0.2.0 candidate**, with the new design and 0–200% controls. No 0.2.0 binary is published, and its own real-audio run remains pending. Shared-backend development measurements are recorded separately. The setup graphic above belongs to the earlier edition.
+The download is **0.2.0, an experimental pre-release**, with the new design and 0–200% controls. Packaging and fast checks passed locally, but real-audio validation under this English bundle identity remains pending. Shared-backend development measurements are recorded separately. The historical 0.1.0 release has the earlier interface and 0–100% range. The setup graphic above belongs to that earlier edition.
 
 ## 1. Download and install
 
-Download [Volume Mixer v0.1.0 for Apple Silicon](https://github.com/HermanLL66/mac-volume-mixer/releases/download/v0.1.0/Volume-Mixer-0.1.0-macOS-arm64.zip). It requires macOS 14.4 or later.
+Download [Volume Mixer v0.2.0 for Apple Silicon](https://github.com/HermanLL66/mac-volume-mixer/releases/download/v0.2.0/Volume-Mixer-0.2.0-macOS-arm64.zip). It requires macOS 14.4 or later. This version is marked as a pre-release; use the explicit 0.2.0 link rather than GitHub’s latest stable release link.
 
-Extract the ZIP in Finder and move **Volume Mixer.app** to Applications. The release includes [SHA256SUMS.txt](https://github.com/HermanLL66/mac-volume-mixer/releases/download/v0.1.0/SHA256SUMS.txt) for checking the download.
+Extract the ZIP in Finder and move **Volume Mixer.app** to Applications. The release includes [SHA256SUMS.txt](https://github.com/HermanLL66/mac-volume-mixer/releases/download/v0.2.0/SHA256SUMS.txt) for checking the download.
 
 The current binary is ad hoc signed and **not notarized by Apple**. If macOS prevents it from opening, review [Apple's guidance on safely opening apps](https://support.apple.com/en-us/102445) and make your own trust decision. [Building from source](../README.md#build-from-source) is also available. A checksum or passing build does not replace notarization.
 
@@ -34,9 +34,9 @@ See [Apple's audio-permission documentation](https://support.apple.com/guide/mac
 
 Start playback in an app so Volume Mixer can discover it. Set that app's slider to a lower value and use the speaker button to mute or unmute it. Settings are saved automatically.
 
-Browser tabs share one browser volume. The controls target local playback. The experimental source does not capture a microphone or set microphone gain, but unchanged far-end call audio and conferencing echo cancellation have not been established. Test an actual call before relying on that configuration.
+Browser tabs share one browser volume. The controls target local playback. The 0.2.0 backend does not capture a microphone or set microphone gain, but unchanged far-end call audio and conferencing echo cancellation have not been established. Test an actual call before relying on that configuration.
 
-In the experimental source, 100% is the original amplitude and sits at 75% slider travel. Up to 200% requests 2× amplitude before peak limiting; this does not guarantee twice the perceived loudness. Capture/render buffering adds a target of approximately 20 ms plus other device latency. The 0.1.0 download retains its original 0–100% behavior.
+In the 0.2.0 pre-release, 100% is the original amplitude and sits at 75% slider travel. Up to 200% requests 2× amplitude before peak limiting; this does not guarantee twice the perceived loudness. Capture/render buffering adds a target of approximately 20 ms plus other device latency. The historical 0.1.0 download retains its original 0–100% behavior.
 
 **Pause** releases audio processing and retains preferences. **Reset all** restores all saved volumes to 100% and unmutes them. **Quit** releases the app's audio resources. Closing the window keeps the menu bar entry available.
 
